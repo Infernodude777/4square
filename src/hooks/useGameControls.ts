@@ -109,4 +109,52 @@ export function useGameControls(options: GameControlsOptions = {}) {
     }
     }
   })
+}import { useEffect, useRef } from 'react'
+
+export type KeyMap = Record<string, boolean>
+
+interface GameControlsOptions {
+  keys?: string[]
+  onFrame?: (pressed: KeyMap) => void
+  preventDefault?: boolean
+}
+
+export function useGameControls(options: GameControlsOptions = {}) {
+  const { keys = [], onFrame, preventDefault = true } = options
+  const pressedRef = useRef<KeyMap>({})
+  const rafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent, isDown: boolean) => {
+      if (!keys.includes(e.key)) return
+      if (preventDefault) e.preventDefault()
+      pressedRef.current = { ...pressedRef.current, [e.key]: isDown }
+    }
+
+    const down = (e: KeyboardEvent) => handleKey(e, true)
+    const up = (e: KeyboardEvent) => handleKey(e, false)
+
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+
+    const tick = () => {
+      onFrame?.(pressedRef.current)
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      }
+    }, [keys.join(','), preventDefault, onFrame])
+
+  return pressedRef
+  }
+
+    }
+    }
+    }
+  })
 }
