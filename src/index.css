@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Luckiest Guy", "Comic Sans MS", "Chalkboard SE", cursive;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --animate-popfont: popfont 1.5s ease-out forwards;
+  --animate-bannerin: bannerin 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-cardin: cardin 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #8fbfe0;
+}
+
+@keyframes popfont {
+  0% {
+    transform: translateY(16px) scale(0.5);
+    opacity: 0;
+  }
+  16% {
+    transform: translateY(0) scale(1.15);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-52px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes bannerin {
+  0% {
+    transform: translate(-50%, -20px) scale(0.82);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cardin {
+  0% {
+    transform: translateY(26px) scale(0.88);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  animation-name: confettifall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+@keyframes confettifall {
+  0% {
+    transform: translateY(-6vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(106vh) rotate(760deg);
+    opacity: 0.65;
+  }
+}
+
+.chalkboard {
+  background:
+    radial-gradient(1100px 640px at 50% -12%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(900px 520px at 88% 112%, rgba(0, 0, 0, 0.45), transparent 62%),
+    radial-gradient(700px 400px at 8% 100%, rgba(0, 0, 0, 0.35), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0 3px, transparent 3px 6px),
+    rgba(22, 44, 38, 0.88);
+  backdrop-filter: blur(5px);
+}

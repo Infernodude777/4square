@@ -1,171 +1,418 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BOTS, TARGET_SCORE, type EntityId } from "../game/constants";
-import { useGame } from "../game/store";
+import { useGame, type Mode } from "../game/store";
+import { WIN_WRAPS } from "../game/tetherball";
 
 const BOT_IDS = Object.keys(BOTS) as Exclude<EntityId, "player">[];
 
 function ChalkSquiggle() {
   return (
     <svg viewBox="0 0 320 14" className="h-3 w-72 text-[#ffd23e]" fill="none">
-              d="M4 8 C 30 2, 55 12, 82 7 S 130 3, 158 8 S 210 12, 240 6 S 290 4, 316 9"
+      <path
+        d="M4 8 C 30 2, 55 12, 82 7 S 130 3, 158 8 S 210 12, 240 6 S 290 4, 316 9"
         stroke="currentColor"
         strokeWidth="4"
         strokeLinecap="round"
-                opacity=="0.85"
+        opacity="0.85"
       />
-      );
-      }
+    </svg>
+  );
+}
 
-      export function Menu() {
+/* ── the mode-picker card ─────────────────────────────────── */
+function ModeCard({
+  mode,
+  active,
+  onPick,
+  title,
+  subtitle,
+  emoji,
+  tint,
+  desc,
+}: {
+  mode: Mode;
+  active: boolean;
+  onPick: (m: Mode) => void;
+  title: string;
+  subtitle: string;
+  emoji: string;
+  tint: string;
+  desc: string;
+}) {
+  return (
+    <button
+      onClick={() => onPick(mode)}
+      className={`relative flex w-full flex-col items-start gap-1 rounded-2xl border-4 p-4 text-left transition-all ${
+        active
+          ? "-translate-y-1 scale-[1.02] shadow-[0_0_50px_rgba(255,210,62,0.35)]"
+          : "hover:-translate-y-0.5 hover:bg-white/5"
+      }`}
+      style={{
+        borderColor: active ? tint : "rgba(255,255,255,0.15)",
+        background: active ? `${tint}18` : "rgba(0,0,0,0.25)",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-3xl">{emoji}</span>
+        <div>
+          <div className="font-display text-xl leading-none" style={{ color: tint }}>
+            {title}
+          </div>
+          <div className="text-[10px] font-bold tracking-widest text-white/50">{subtitle}</div>
+        </div>
+      </div>
+      <p className="text-[11px] font-bold leading-snug text-white/70">{desc}</p>
+      {active && (
+        <div className="absolute -top-2 -right-2 rounded-full bg-[#ffd23e] px-2 py-0.5 text-[9px] font-extrabold tracking-widest text-[#3a2a00]">
+          SELECTED
+        </div>
+      )}
+    </button>
+  );
+}
+
+export function Menu() {
   const start = useGame((s) => s.start);
+  const [mode, setMode] = useState<Mode>("foursquare");
+
+  const isFS = mode === "foursquare";
   return (
     <div className="chalkboard absolute inset-0 z-20 flex items-center justify-center overflow-y-auto p-6 font-body">
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-stretch gap-6 lg:flex-row">
-                {/* left: title + rules */}
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-stretch gap-6 lg:flex-row">
+        {/* ── left: title + description ─────────────────── */}
         <div className="flex flex-1 flex-col justify-center">
-                    <h1
-            className="font-display text-7xl leading-[0.95] text-[#ffd23e] md:text-8xl"
-                        style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
-          >
-            FOUR
-            <br />
-            SQUARE
-                              <div className="mt-3">
+          <div className="font-display text-lg tracking-[0.3em] text-[#8fd8cf]">THE SCHOOLYARD GAUNTLET</div>
+          {isFS ? (
+            <>
+              <h1
+                className="font-display text-7xl leading-[0.95] text-[#ffd23e] md:text-8xl"
+                style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
+              >
+                FOUR
+                <br />
+                SQUARE
+              </h1>
+              <div className="mt-1 font-display text-2xl tracking-widest text-[#ff8a7a]">RECESS ROYALE</div>
+            </>
+          ) : (
+            <>
+              <h1
+                className="font-display text-7xl leading-[0.95] text-[#ffd23e] md:text-8xl"
+                style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
+              >
+                TETHER
+                <br />
+                BALL
+              </h1>
+              <div className="mt-1 font-display text-2xl tracking-widest text-[#ff8a7a]">POLE DUEL · 1v1</div>
+            </>
+          )}
+          <div className="mt-3">
             <ChalkSquiggle />
-                    <p className="mt-3 max-w-md text-sm font-bold leading-relaxed text-white/75">
-            Four chrome-plated classmate-bots hold the blacktop. Time your swings off the bounce, skimmer low,
-                        smash from the sky, and climb from Square 1 to the crown. Miss, and you're eating chalk in the line.
+          </div>
+          <p className="mt-3 max-w-md text-sm font-bold leading-relaxed text-white/75">
+            {isFS ? (
+              <>
+                Four chrome-plated classmate-bots hold the blacktop. Time your swings off the bounce, skimmer low,
+                smash from the sky, and climb from Square 1 to the crown.
+              </>
+            ) : (
+              <>
+                Just you, REX, and a pole. Ten feet tall, rope on top, ball on the end. Wind it {WIN_WRAPS} full
+                turns your way to win. Crouch to skim it low, jump and strike on the way <em className="not-italic text-[#ff8a7a]">down</em> to
+                smash, or nail the razor-thin timing on a HIGH LOFT to sail it clean over REX's head.
+              </>
+            )}
           </p>
-          <div className="mt-5 grid max-w-md grid-cols-2 gap-x-6 gap-y-1.5 text-[13px] font-bold text-white/70">
-            <div>
-              <span className="text-[#ffd23e]">◈</span> Ball must bounce once in a square
-                        <div>
-              <span className="text-[#ffd23e]">◈</span> Fault = sent to the back of the line
-            </div>            <div>
-              <span className="text-[#ffd23e]">◈</span> Everyone rotates up — classic rules
-                        <div>
-              <span className="text-[#ffd23e]">◈</span> First to {TARGET_SCORE} rules the yard
-                      </div>
-                      onClick={start}
+
+          <div className="mt-5 grid max-w-md grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] font-bold text-white/70 sm:grid-cols-2">
+            {isFS ? (
+              <>
+                <div><span className="text-[#ffd23e]">◈</span> Ball bounces once per square</div>
+                <div><span className="text-[#ffd23e]">◈</span> Fault = back of the line</div>
+                <div><span className="text-[#ffd23e]">◈</span> Rotate up on every miss</div>
+                <div><span className="text-[#ffd23e]">◈</span> First to {TARGET_SCORE} rules the yard</div>
+              </>
+            ) : (
+              <>
+                <div><span className="text-[#ffd23e]">◈</span> You wind counter-clockwise</div>
+                <div><span className="text-[#ffd23e]">◈</span> Bot winds the other way</div>
+                <div><span className="text-[#ffd23e]">◈</span> Final wrap above the height mark</div>
+                <div><span className="text-[#ffd23e]">◈</span> {WIN_WRAPS} wraps = victory 👑</div>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => start(mode)}
             className="group mt-7 w-fit rounded-2xl border-b-[6px] border-[#8f6a00] bg-[#ffd23e] px-10 py-4 font-display text-3xl tracking-wide text-[#3a2a00] transition-all hover:-translate-y-0.5 hover:bg-[#ffe066] active:translate-y-0.5 active:border-b-2"
           >
-            CLAIM SQUARE 1 ▸
+            {isFS ? "CLAIM SQUARE 1 ▸" : "STEP TO THE POLE ▸"}
           </button>
           <div className="mt-2 text-[11px] font-bold tracking-widest text-white/40">
-            YOU + 4 BOTS · SOUND ON RECOMMENDED 🔔
-          </div>        </div>
-        {/* right: roster + controls */}
-        <div className="flex w-full max-w-sm flex-col gap-3 lg:w-96">
-          <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4">
-                        {BOT_IDS.map((id) => {
-                                          const b = BOTS[id];
-              return (
-                <div key={id} className="mb-2 flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2">
-                                      className="flex h-9 w-9 items-center justify-center rounded-md font-display text-xs text-black/80"
-                    style={{ background: b.color }}
-                  >
-                                      {b.short}
-                                    <div className="min-w-0 flex-1">
-                                                          <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <span key={i} className={`text-[9px] ${i <= Math.round(b.skill * 5) ? "text-[#ffd23e]" : "text-white/20"}`}>
-                        ★
-                                          ))}
-                  </div>
-              );
-            })}
+            SOUND ON RECOMMENDED 🔔 · WASD MOVE · SPACE JUMP · C CROUCH · CLICK HIT
           </div>
-                    <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4 text-[12px] font-bold text-white/70">
-                        <div className="grid grid-cols-[70px_1fr] gap-y-1">
-                                          <span className="text-[#b58cff]">SHIFT + CLICK</span> <span>LOB — safe moon-shot</span>
-                                                      </div>
-                        );
-      }
+        </div>
 
-      export function Victory() {
+        {/* ── right: mode picker + roster ──────────────────── */}
+        <div className="flex w-full max-w-sm flex-col gap-3 lg:w-96">
+          <div className="mb-1 font-display text-sm tracking-[0.25em] text-white/80">CHOOSE YOUR GAME</div>
+          <ModeCard
+            mode="foursquare"
+            active={isFS}
+            onPick={setMode}
+            title="FOUR SQUARE"
+            subtitle="RECESS ROYALE · 4 BOTS"
+            emoji="🟨🟥🟩🟦"
+            tint="#ffd23e"
+            desc="Classic playground four-square. Rotate up through the ranks, dethrone the King, race to 30."
+          />
+          <ModeCard
+            mode="tetherball"
+            active={!isFS}
+            onPick={setMode}
+            title="TETHERBALL"
+            subtitle="POLE DUEL · 1V1"
+            emoji="🎯"
+            tint="#ff8a3c"
+            desc="One-on-one against REX. Wind the rope your way, dodge fouls, land the winning wrap above the yellow mark."
+          />
+
+          {isFS && (
+            <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4">
+              <div className="mb-2 font-display text-sm tracking-[0.25em] text-white/80">TODAY'S DETENTION BOTS</div>
+              {BOT_IDS.map((id) => {
+                const b = BOTS[id];
+                return (
+                  <div key={id} className="mb-2 flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2">
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-md font-display text-xs text-black/80"
+                      style={{ background: b.color }}
+                    >
+                      {b.short}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-extrabold text-white/90">{b.name}</div>
+                      <div className="truncate text-[10px] font-bold text-white/50">{b.tag}</div>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <span
+                          key={i}
+                          className={`text-[9px] ${i <= Math.round(b.skill * 5) ? "text-[#ffd23e]" : "text-white/20"}`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {!isFS && (
+            <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4">
+              <div className="mb-2 font-display text-sm tracking-[0.25em] text-white/80">TONIGHT'S CHALLENGER</div>
+              <div className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2">
+                <div className="flex h-11 w-11 items-center justify-center rounded-md font-display text-xs text-white bg-[#e2483d]">
+                  REX
+                </div>
+                <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-extrabold text-white/90">REX</div>
+              <div className="truncate text-[10px] font-bold text-white/50">Pole King · has never lost the crown</div>
+                </div>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4].map((i) => (
+                    <span key={i} className="text-[9px] text-[#ffd23e]">
+                      ★
+                    </span>
+                  ))}
+                  <span className="text-[9px] text-white/20">★</span>
+                </div>
+              </div>
+              <div className="mt-3 border-t border-white/10 pt-3 text-[11px] font-bold text-white/60">
+                <div className="mb-1 font-display text-[10px] tracking-widest text-white/80">HOW YOU HIT</div>
+                <div className="grid grid-cols-[92px_1fr] gap-y-1">
+                  <span className="text-[#f4c542]">CLICK</span> <span>DRIVE — the classic punch</span>
+                  <span className="text-[#38d6d0]">C + CLICK</span> <span>SKIMMER — low, fast, mean</span>
+                  <span className="text-[#ff5a3c]">SPACE ↓ CLICK</span>{" "}
+                  <span>
+                    SMASH — jump, then strike <em className="text-[#ff8a7a] not-italic">falling</em>
+                  </span>
+                  <span className="text-[#b58cff]">RIGHT CLICK</span>{" "}
+                  <span>
+                    HIGH LOFT — <em className="text-[#c9a8ff] not-italic">tight timing</em>, sails overhead
+                  </span>
+                  <span className="text-[#8ae06b]">C + RIGHT</span> <span>DINK — soft touch, kills pace</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Victory() {
   const st = useGame();
+  const isTether = st.mode === "tetherball";
+
+  // No generic confetti. Instead: shaky "TAPE TOP" handwritten note aesthetic.
+  // A single white chalk circle drawn on dark background feels like recess
+  // art pinned to the school's faded blue corkboard.
+
   const confetti = useMemo(
     () =>
-      Array.from({ length: 44 }, (_, i) => ({
-        left: Math.random() * 100,
-        delay: Math.random() * 3,
-                dur: 2.4 + Math.random() * 2.4,
-        color: ["#ffd23e", "#ff5a3c", "#38d6d0", "#57d977", "#b58cff", "#f4f1e8"][i % 6],
-        w: 6 + Math.random() * 7,
-        h: 10 + Math.random() * 8,
+      Array.from({ length: 28 }, (_, i) => ({
+        left: 6 + Math.random() * 88,
+        delay: Math.random() * 5,
+        dur: 3.2 + Math.random() * 2.2,
+        color: ["#d4a96e", "#f0e8d0", "#a8d0f0", "#c8e8b0", "#f0b8c0"][i % 5],
+        w: 3 + Math.random() * 4,
+        h: 3 + Math.random() * 4,
       })),
-    []
-    );
+    [],
+  );
+
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#10141c]/80 font-body backdrop-blur-[3px]">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#102530]/90 font-body backdrop-blur-[4px]">
+      {/* subtle chalk dust particles — soft, drawing-like, not confetti */}
       {confetti.map((c, i) => (
-                          key={i}
+        <span
+          key={i}
           className="confetti-piece"
           style={{
             left: `${c.left}%`,
             width: c.w,
             height: c.h,
-                        background: c.color,
+            background: c.color,
             animationDelay: `${c.delay}s`,
             animationDuration: `${c.dur}s`,
+            opacity: 0.35,
           }}
         />
-        ))}
-      <div className="animate-cardin mx-4 w-full max-w-lg rounded-3xl border-4 border-[#ffd23e] bg-[#171d29] p-8 text-center shadow-[0_0_80px_rgba(255,210,62,0.25)]">
-                <h2
-          className="font-display text-5xl leading-none text-[#ffd23e]"
-          style={{ textShadow: "0 3px 0 #c23227" }}
-        >
-                      RECESS CHAMPION
-                <p className="mt-2 text-sm font-bold text-white/60">
-          The blacktop is yours. Even ADA-9000 computed a 0.00% chance of this.
-                <div className="mt-6 grid grid-cols-3 gap-2 text-center">
-          {[
-            ["POINTS", st.score, "#ffd23e"],
-            ["HITS", st.hits, "#7db4ff"],
-            ["PERFECTS", st.perfects, "#38d6d0"],
-            ["KNOCKOUTS", st.kos, "#ff5a3c"],
-                        ["BEST STREAK", st.bestStreak, "#b58cff"],
-            ["RALLIES", st.rallies, "#57d977"],
-          ].map(([label, val, color]) => (
-            <div key={label as string} className="rounded-xl bg-white/5 py-3">
-              <div className="font-display text-3xl" style={{ color: color as string }}>
-                                {val as number}
-                                                  ))}
-        </div>        <div className="mt-7 flex justify-center gap-3">
-                      onClick={st.start}
-            className="rounded-xl border-b-4 border-[#8f6a00] bg-[#ffd23e] px-8 py-3 font-display text-xl text-[#3a2a00] transition hover:bg-[#ffe066] active:translate-y-0.5 active:border-b-0"
-          >
-            RUN IT BACK
-          </button>
-          <GamepadButton            onClick={st.toMenu}
-            className="rounded-xl border border-white/20 px-6 py-3 font-display text-xl text-white/80 transition hover:bg-white/10"
-          >
-            MENU
-                  </div>
-            );
-      }
-      
-              </div>
-          ))
-          ]}
-          }}
       ))}
-  )
-  )
-      }
-                        </div>
-                      </span>
-                    ))}
-              )
-                        })}
-                        </div>
+
+      {/* Central "recess slip" + tape pieces */}
+      <div
+        className="relative mx-4 w-full max-w-md animate-cardin overflow-hidden rounded-xl
+                   border-[3px] border-[#f5edc8] bg-[#fdfaf2] px-7 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.6)]"
+        style={{ fontFamily: "'Nunito', system-ui, sans-serif" }}
+      >
+        {/* Top yellow tape strips (like a student pinned paper to board) */}
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 flex gap-5">
+          <div className="h-6 w-10 -rotate-[8deg] rounded-b-sm bg-[#f8e070] opacity-80 shadow-sm" />
+          <div className="h-6 w-10 rotate-[6deg]  rounded-b-sm bg-[#f8e070] opacity-80 shadow-sm" />
+        </div>
+
+        {/* Handwritten heading */}
+        <div className="mb-1 mt-3 text-center text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#64748b]">
+          {isTether ? "RECESS REPORT CARD" : "DETENTION NOTICE"}
+        </div>
+
+        {/* Main display title — no emoji, no glow, just massive display text */}
+        <h1
+          className="font-display text-center leading-[0.95] text-[#1a2740]"
+          style={{
+            textShadow: "none",
+            padding: "14px 0 6px",
+          }}
+        >
+          <span style={{ fontSize: 60, display: "block", fontFamily: "'Luckiest Guy', cursive" }}>
+            {isTether ? "TETHERBALL" : "FOUR SQUARE"}
+            <br />
+            <span style={{ fontSize: 48, display: "block", color: "#c23227" }}>
+              {isTether ? "POLE WINNER" : "RECESS KING"}
+            </span>
+          </span>
+        </h1>
+
+        {/* Subtitle — hand-written feel */}
+        <p
+          className="mt-1 text-center text-sm font-bold leading-relaxed"
+          style={{ color: "#7a8899", fontStyle: "italic" }}
+        >
+          {isTether
+            ? "You just hung the whole thing up. REX is still staring at the pole."
+            : "You owned the blacktop. Every bot, every square, every badge. Recess is yours."}
+        </p>
+
+        {/* Divider — like a hand-drawn rule line */}
+        <div className="mx-auto my-5 w-11/12 border-b-2 border-dashed border-[#d8b8a0]" />
+
+        {/* Stats Grid — hand-lettered, reading like tally marks on a notebook page */}
+        <div className="grid grid-cols-3 gap-4 text-center">
+          {(isTether
+            ? ([
+                ["Points",  st.score,  "#3542ff"],
+                ["Your Fouls", st.fouls, "#f05a40"],
+                ["Bot Fouls",  st.opFouls, "#3a9a40"],
+              ] as const)
+            : ([
+                ["Points",  st.score,  "#F0A020"],
+                ["Hits",   st.hits,   "#4050c0"],
+                ["Perfect",st.perfects,"#20a8a0"],
+                ["Kos",    st.kos,    "#c05050"],
+                ["Streak", st.bestStreak,"#8050a0"],
+                ["Rallies", st.rallies, "#308050"],
+              ] as const)).map(([label, value, col]) => (
+            <div key={label} className="flex flex-col items-center">
+              <span
+                className="font-display text-4xl leading-none"
+                style={{ color: col, fontSize: 48 }}
+              >
+                {value}
+              </span>
+              <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#a08870]">
+                {label}
+              </span>
             </div>
-                        </div>
-            </div>
-                              </div>
-          </h1>
-  )
-      }
-  )
+          ))}
+        </div>
+
+        {/* Note icon — hand-sketched badge, not emoji */}
+        <div
+          className="mx-auto mt-6 flex w-fit items-center gap-3 rounded-lg border-2 border-dashed border-[#c09880] px-4 py-2"
+          style={{ background: "rgba(255,225,180,0.35)" }}
+        >
+          {/* Tiny hand-drawn graduation cap SVG */}
+          <svg width="34" height="26" viewBox="0 0 34 26">
+            <path d="M17 2 2 12l15 10 15-10-15-10z" fill="#2F4460"/>
+            <rect x="25" y="10" width="2.5" height="14" rx="1" fill="#C89628"/>
+            <path d="M27.5 24c0 2.8-1.2 5.4-2.5 5.4s-2.5-2.6-2.5-5.4" fill="#C89628"/>
+          </svg>
+          <div className="flex flex-col">
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#4a3a28]">
+              {isTether ? "Today's tether king" : "Four-square hall monitor"}
+            </span>
+            <span className="text-[10px] font-bold" style={{ color: "#907060" }}>
+              Graduated recess, top of class
+            </span>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => st.start(st.mode)}
+            className="flex-1 rounded-none border-b-[5px] border-[#a06b20] bg-[#f8d44c] px-6 py-3
+                       font-display text-xl text-[#2e1a05] transition-all
+                       hover:bg-[#f8e060] active:translate-y-0.5 active:border-b-0"
+            style={{ fontFamily: "'Nunito', system-ui, sans-serif" }}
+          >
+            PLAY AGAIN
+          </button>
+          <button
+            onClick={st.toMenu}
+            className="rounded-none border-2 border-dashed border-[#a09888] px-6 py-3 text-sm font-bold
+                       text-[#8a7055] transition hover:bg-[#f0e8d8]"
+            style={{ fontFamily: "'Nunito', system-ui, sans-serif" }}
+          >
+            BACK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

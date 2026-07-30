@@ -27,7 +27,7 @@ function tone(
   type: OscillatorType = "sine",
   vol = 0.3,
   when = 0,
-    glideTo?: number
+  glideTo?: number
 ) {
   const c = ac();
   if (!c || !master) return;
@@ -35,7 +35,7 @@ function tone(
   const o = c.createOscillator();
   const g = c.createGain();
   o.type = type;
-    o.frequency.setValueAtTime(freq, t);
+  o.frequency.setValueAtTime(freq, t);
   if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -49,7 +49,7 @@ function noise(dur: number, vol = 0.3, filterFreq = 1200, when = 0, type: Biquad
   if (!c || !master) return;
   const t = c.currentTime + when;
   const len = Math.floor(c.sampleRate * dur);
-    const buf = c.createBuffer(1, len, c.sampleRate);
+  const buf = c.createBuffer(1, len, c.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
   const src = c.createBufferSource();
@@ -60,7 +60,7 @@ function noise(dur: number, vol = 0.3, filterFreq = 1200, when = 0, type: Biquad
   const g = c.createGain();
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(master);
+  src.connect(f).connect(g).connect(master);
   src.start(t);
 }
 
@@ -83,16 +83,16 @@ export const sfx = {
   },
   perfect() {
     tone(880, 0.12, "sine", 0.22);
-        tone(1318.5, 0.18, "sine", 0.2, 0.06);
+    tone(1318.5, 0.18, "sine", 0.2, 0.06);
     tone(1760, 0.22, "sine", 0.12, 0.12);
   },
   skimmer() {
     noise(0.18, 0.22, 900, 0, "highpass");
   },
-    smash() {
+  smash() {
     tone(70, 0.18, "sine", 0.5, 0, 40);
     noise(0.12, 0.4, 2400);
-    },
+  },
   fault() {
     tone(300, 0.28, "sawtooth", 0.14, 0, 150);
     tone(220, 0.32, "sawtooth", 0.12, 0.16, 110);
@@ -100,7 +100,7 @@ export const sfx = {
   },
   cheer() {
     for (let i = 0; i < 6; i++) noise(0.35, 0.12, 900 + Math.random() * 900, i * 0.03, "bandpass");
-        tone(523, 0.14, "square", 0.08, 0);
+    tone(523, 0.14, "square", 0.08, 0);
     tone(659, 0.14, "square", 0.08, 0.09);
     tone(784, 0.2, "square", 0.09, 0.18);
   },
@@ -112,31 +112,10 @@ export const sfx = {
     tone(440, 0.15, "sine", 0.16, 0, 520);
   },
   ui() {
-        tone(660, 0.06, "sine", 0.12);
+    tone(660, 0.06, "sine", 0.12);
   },
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, "square", 0.09, i * 0.12));
     noise(0.9, 0.14, 1400, 0.5);
   },
 };
-
-  }
-  }
-  }
-  }
-  }
-  }
-    }
-  }
-  }
-  }
-  }
-  }
-  }
-}
-}
-}
-)
-}
-  }
-}

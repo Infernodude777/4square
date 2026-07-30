@@ -14,7 +14,7 @@ export interface EntRT {
   walkPhase: number;
   facing: number;
   swing: number; // seconds since last swing (large = idle)
-    face: FaceState;
+  face: FaceState;
   faceUntil: number;
   hitCooldown: number;
   serveTimer: number;
@@ -24,7 +24,7 @@ export interface EntRT {
 export interface BotPlan {
   miss: boolean;
   whiff: boolean;
-    move: MoveId;
+  move: MoveId;
   aim: THREE.Vector3;
   react: number;
   bounceAt: number; // game time when legal bounce happened
@@ -34,12 +34,12 @@ export interface Leg {
   hitter: EntityId;
   isServe: boolean;
   serveBounced: boolean;
-    firstBounced: boolean;
+  firstBounced: boolean;
   receiver: EntityId | null;
   move: MoveId;
   quality: number; // timing quality of the stroke that started this leg
   createdAt: number;
-    done: boolean;
+  done: boolean;
 }
 
 export type BurstKind = "hit" | "perfect" | "dust" | "star";
@@ -58,20 +58,20 @@ interface RT {
     vel: THREE.Vector3;
     move: MoveId;
     curve: number; // lateral accel until first bounce
-        active: boolean;
+    active: boolean;
     grounded: number; // seconds rolling on the ground
     visible: boolean;
   };
   leg: Leg | null;
   serveStage: "idle" | "hold" | "tossed" | "armed";
   aim: THREE.Vector3;
-    aimLegal: boolean;
+  aimLegal: boolean;
   mouse: { x: number; y: number };
   input: {
     fwd: boolean;
     back: boolean;
     left: boolean;
-        right: boolean;
+    right: boolean;
     crouch: boolean;
     lob: boolean;
   };
@@ -92,7 +92,7 @@ function mkEnt(id: EntityId, x: number, z: number): EntRT {
     moving: false,
     walkPhase: 0,
     facing: 0,
-        swing: 9,
+    swing: 9,
     face: "idle",
     faceUntil: 0,
     hitCooldown: 0,
@@ -112,21 +112,21 @@ export const RT: RT = {
   },
   ball: {
     pos: new THREE.Vector3(0, -10, 0),
-        vel: new THREE.Vector3(),
+    vel: new THREE.Vector3(),
     move: "drive",
     curve: 0,
     active: false,
     grounded: 0,
     visible: false,
   },
-    leg: null,
+  leg: null,
   serveStage: "idle",
   aim: new THREE.Vector3(2, 0, 2),
   aimLegal: true,
   mouse: { x: 0, y: 0 },
   input: { fwd: false, back: false, left: false, right: false, crouch: false, lob: false },
   hitQueue: [],
-    bursts: [],
+  bursts: [],
   lastHitInfo: null,
   shake: 0,
 };
@@ -140,19 +140,4 @@ export function setFace(id: EntityId, face: FaceState, dur = 1.4) {
 export function burst(kind: BurstKind, pos: THREE.Vector3, color: string) {
   RT.bursts.push({ kind, pos: pos.clone(), color, at: RT.time });
   if (RT.bursts.length > 24) RT.bursts.shift();
-}
-
-}
-}
-  }
-  }
-}
-  }
-}
-  }
-  }
-}
-}
-}
-}
 }

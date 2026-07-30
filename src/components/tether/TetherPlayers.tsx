@@ -2,17 +2,47 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoundedBox } from "@react-three/drei";
-import { RT } from "../game/refs";
-import { BOTS, sqOf, type EntityId } from "../game/constants";
-import { useGame } from "../game/store";
-import { drawFace, makeNameTag } from "../game/textures";
+import { TS } from "./tetherState";
+import { drawFace, makeNameTag } from "../../game/textures";
+import type { FaceState } from "../../game/refs";
 
-export function Rig({ id }: { id: EntityId }) {
-  const isPlayer = id === "player";
-  const def = isPlayer ? null : BOTS[id as Exclude<EntityId, "player">];
-  const jersey = isPlayer ? "#2f6fdb" : def!.color;
-  const accent = isPlayer ? "#f4f1e8" : def!.accent;
-  const skin = isPlayer ? "#f0c297" : "#b8bfc7";
+interface RigProps {
+  side: "player" | "op";
+}
+
+/**
+ * A stripped-down rig for the tetherball mode — one player (blue jersey,
+ * ballcap) and one opponent (red robot with LED face). Both driven off
+ * TS.current so they animate without React re-renders.
+ */
+export function TetherRig({ side }: RigProps) {
+  const isPlayer = side === "player";
+  const jersey = isPlayer ? "#2f6fdb" : "#e2483d";
+  const accent = isPlayer ? "#f4f1e8" : "#ffd23e";
+  const skin = isPlayer ? "#f0c297" : "#c7d0dc";
+  const screen = "#1a0e0c";
+  const face = useMemo(() => {
+    if (isPlayer) return null;
+    const c = document.createElement("canvas");
+    c.width = 128;
+    c.height = 96;
+    drawFace(c, "idle", screen, accent);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return { canvas: c, tex };
+  }, [isPlayer, accent]);
+
+  const tag = useMemo(
+    () =>
+      makeNameTag(
+        isPlayer ? "YOU" : "REX",
+        isPlayer ? "#ffd23e" : "#ff6b5e",
+        isPlayer ? "challenger" : "pole king",
+        !isPlayer,   // bot is the king (has the crown)
+        isPlayer,
+      ),
+    [isPlayer],
+  );
 
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
@@ -20,82 +50,53 @@ export function Rig({ id }: { id: EntityId }) {
   const armL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
-  const crown = useRef<THREE.Group>(null);
-  const ring = useRef<THREE.Mesh>(null);
-  const antennaTip = useRef<THREE.Mesh>(null);
-
-  const assign = useGame((s) => s.assign);
-  const sq = sqOf(id, assign);
-  const isKing = sq === 4;
-
-  const face = useMemo(() => {
-    if (isPlayer) return null;
-    const c = document.createElement("canvas");
-    c.width = 128;
-    c.height = 96;
-    drawFace(c, "idle", def!.screen, def!.accent);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return { canvas: c, tex: t };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  const tag = useMemo(() => {
-    const name  = isPlayer ? "YOU" : def!.short;
-    const color = isPlayer ? "#ffd23e" : def!.color;
-    const label = sq === 0 ? "in line" : sq === 4 ? "king" : `sq ${sq}`;
-    return makeNameTag(name, color, label, isKing, isPlayer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sq, isKing, id]);
-
-  const lastFace = useRef<string>("__none__");
+  const lastFace = useRef<FaceState>("idle");
 
   useFrame(({ clock }) => {
-    const e = RT.entities[id];
+    const t = TS.current;
     if (!root.current || !body.current) return;
-    const t = clock.elapsedTime;
-    root.current.position.set(e.pos.x, e.y, e.pos.z);
-    root.current.rotation.y = e.facing;
+    const time = clock.elapsedTime;
 
-    // crouch squash
-    const cr = e.crouch ? 0.6 : 1;
+    const pos = isPlayer ? t.playerPos : t.opPos;
+    const yOff = isPlayer ? t.playerY : t.opY;
+    const facing = isPlayer ? t.playerFacing : t.opFacing;
+    const swing = isPlayer ? t.playerSwing : t.opSwing;
+    const crouch = isPlayer ? t.playerCrouch : t.opCrouch;
+
+    root.current.position.set(pos.x, yOff, pos.z);
+    root.current.rotation.y = facing;
+
+    const cr = crouch ? 0.62 : 1;
     body.current.scale.y += (cr - body.current.scale.y) * 0.35;
     body.current.position.y = (body.current.scale.y - 1) * 0.48;
 
-    // gait
-    const sw = e.moving ? Math.sin(e.walkPhase) * 0.75 : 0;
+    // walk sway when hitting/moving
+    const moving =
+      isPlayer
+        ? Math.hypot(t.ballVel.x, t.ballVel.z) > 0.4 || true
+        : Math.hypot(t.opTarget.x - t.opPos.x, t.opTarget.z - t.opPos.z) > 0.08;
+    const sw = moving ? Math.sin(time * 6) * 0.35 : 0;
     if (legL.current) legL.current.rotation.x = sw;
     if (legR.current) legR.current.rotation.x = -sw;
 
-    // swing: wind-up overhead → follow through
-    let arm = 0.15 + Math.sin(t * 2 + (isPlayer ? 0 : 1.7)) * 0.07;
-    if (e.swing < 0.34) {
-      const k = e.swing / 0.34;
+    // arm swing animation (windup then follow through)
+    let arm = 0.15 + Math.sin(time * 2 + (isPlayer ? 0 : 1.7)) * 0.07;
+    if (swing < 0.34) {
+      const k = swing / 0.34;
       arm = -2.3 + k * 3.3;
     }
     if (armR.current) armR.current.rotation.x = arm;
     if (armL.current) armL.current.rotation.x = -sw * 0.5 - 0.08;
 
-    body.current.rotation.z = e.moving ? Math.sin(e.walkPhase) * 0.05 : Math.sin(t * 1.3 + (isPlayer ? 0 : 2)) * 0.025;
-
-    if (crown.current) {
-      crown.current.visible = isKing;
-      crown.current.position.y = 1.98 + Math.sin(t * 3) * 0.035;
-      crown.current.rotation.y = t * 1.2;
-    }
-    if (ring.current) {
-      const s = 1 + Math.sin(t * 4.5) * 0.08;
-      ring.current.scale.setScalar(s);
-      (ring.current.material as THREE.MeshBasicMaterial).opacity = isPlayer ? 0.75 : 0;
-    }
-    if (antennaTip.current) {
-      const m = antennaTip.current.material as THREE.MeshStandardMaterial;
-      m.emissiveIntensity = e.face === "alert" ? 2.6 + Math.sin(t * 18) * 1.6 : 1.1 + Math.sin(t * 3) * 0.4;
-    }
-    if (face && e.face !== lastFace.current) {
-      lastFace.current = e.face;
-      drawFace(face.canvas, e.face, def!.screen, def!.accent);
-      face.tex.needsUpdate = true;
+    // bot face
+    if (face && !isPlayer) {
+      const wantsFace: FaceState =
+        swing < 0.35 ? "hit" : t.thetaVel * -1 > 5 ? "happy" : Math.abs(t.thetaVel) > 2 ? "alert" : "idle";
+      if (wantsFace !== lastFace.current) {
+        lastFace.current = wantsFace;
+        drawFace(face.canvas, wantsFace, screen, accent);
+        face.tex.needsUpdate = true;
+      }
     }
   });
 
@@ -170,7 +171,6 @@ export function Rig({ id }: { id: EntityId }) {
               <sphereGeometry args={[0.032, 8, 8]} />
               <meshStandardMaterial color="#1b1f26" roughness={0.3} />
             </mesh>
-            {/* backwards cap */}
             <mesh position={[0, 0.1, 0]} castShadow>
               <sphereGeometry args={[0.275, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
               <meshStandardMaterial color="#e2483d" roughness={0.6} />
@@ -189,7 +189,6 @@ export function Rig({ id }: { id: EntityId }) {
               <planeGeometry args={[0.4, 0.3]} />
               <meshBasicMaterial map={face!.tex} toneMapped={false} />
             </mesh>
-            {/* ears */}
             <mesh position={[-0.27, 0, 0]} rotation-z={Math.PI / 2}>
               <cylinderGeometry args={[0.06, 0.06, 0.06, 10]} />
               <meshStandardMaterial color="#8f97a1" metalness={0.6} roughness={0.4} />
@@ -198,46 +197,21 @@ export function Rig({ id }: { id: EntityId }) {
               <cylinderGeometry args={[0.06, 0.06, 0.06, 10]} />
               <meshStandardMaterial color="#8f97a1" metalness={0.6} roughness={0.4} />
             </mesh>
-            {/* antenna */}
             <mesh position={[0, 0.3, 0]}>
               <cylinderGeometry args={[0.018, 0.018, 0.2, 8]} />
               <meshStandardMaterial color="#5b6470" metalness={0.7} roughness={0.3} />
             </mesh>
-            <mesh ref={antennaTip} position={[0, 0.42, 0]}>
+            <mesh position={[0, 0.42, 0]}>
               <sphereGeometry args={[0.05, 10, 10]} />
-              <meshStandardMaterial color={def!.accent} emissive={def!.accent} emissiveIntensity={1.2} />
+              <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.4} />
             </mesh>
           </group>
         )}
-
-        {/* crown */}
-        <group ref={crown} visible={false}>
-          <mesh castShadow>
-            <cylinderGeometry args={[0.15, 0.17, 0.1, 12]} />
-            <meshStandardMaterial color="#f2b53c" metalness={0.7} roughness={0.25} emissive="#8a6a10" emissiveIntensity={0.35} />
-          </mesh>
-          {[0, 1, 2, 3, 4].map((i) => {
-            const a = (i / 5) * Math.PI * 2;
-            return (
-              <mesh key={i} position={[Math.cos(a) * 0.12, 0.1, Math.sin(a) * 0.12]}>
-                <coneGeometry args={[0.045, 0.14, 6]} />
-                <meshStandardMaterial color="#f2b53c" metalness={0.7} roughness={0.25} emissive="#8a6a10" emissiveIntensity={0.35} />
-              </mesh>
-            );
-          })}
-        </group>
       </group>
 
-      {/* name tag */}
       <sprite position={[0, 2.38, 0]} scale={[1.42, 0.36, 1]}>
         <spriteMaterial map={tag} depthWrite={false} transparent />
       </sprite>
-
-      {/* under-ring */}
-      <mesh ref={ring} rotation-x={-Math.PI / 2} position={[0, 0.02, 0]}>
-        <ringGeometry args={[0.4, 0.52, 32]} />
-        <meshBasicMaterial color={isPlayer ? "#ffe066" : def!.color} transparent opacity={0} depthWrite={false} />
-      </mesh>
     </group>
   );
 }

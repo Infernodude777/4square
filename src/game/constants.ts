@@ -22,7 +22,7 @@ export function squareAt(x: number, z: number): number | null {
   const sz = z < 0 ? -1 : 1;
   if (sx < 0 && sz < 0) return 1;
   if (sx > 0 && sz < 0) return 2;
-    if (sx < 0 && sz > 0) return 3;
+  if (sx < 0 && sz > 0) return 3;
   return 4;
 }
 
@@ -38,7 +38,7 @@ export interface MoveDef {
   name: string;
   T: number; // flight time to target (s)
   rest: number; // vertical restitution off the asphalt
-    fric: number; // horizontal friction on bounce (skid)
+  fric: number; // horizontal friction on bounce (skid)
   color: string;
   err: number; // inherent inaccuracy
   idealY: number; // ideal contact height
@@ -58,14 +58,14 @@ export const MOVES: Record<MoveId, MoveDef> = {
     idealY: 0.8,
     win: 0.85,
     desc: "The trusty flat shot. Solid pace, honest bounce.",
-        key: "CLICK · standing",
+    key: "CLICK · standing",
   },
   skimmer: {
     name: "SKIMMER",
     T: 0.52,
     rest: 0.14,
     fric: 0.97,
-        color: "#38d6d0",
+    color: "#38d6d0",
     err: 0.13,
     idealY: 0.2,
     win: 0.45,
@@ -74,21 +74,21 @@ export const MOVES: Record<MoveId, MoveDef> = {
   },
   smash: {
     name: "SMASH",
-        T: 0.4,
+    T: 0.4,
     rest: 0.62,
     fric: 0.7,
     color: "#ff5a3c",
-        err: 0.28,
+    err: 0.28,
     idealY: 2.05,
     win: 1.05,
     desc: "Jump + hit a high ball. Pound it straight down.",
-        key: "SPACE + CLICK",
+    key: "SPACE + CLICK",
   },
   lob: {
     name: "LOB",
     T: 1.5,
     rest: 0.55,
-        fric: 0.6,
+    fric: 0.6,
     color: "#b58cff",
     err: 0.05,
     idealY: 1.0,
@@ -96,7 +96,7 @@ export const MOVES: Record<MoveId, MoveDef> = {
     desc: "Moon-shot. Nearly unmissable, gives bots time.",
     key: "HOLD SHIFT + CLICK",
   },
-    drop: {
+  drop: {
     name: "DROP SHOT",
     T: 0.5,
     rest: 0.16,
@@ -106,8 +106,8 @@ export const MOVES: Record<MoveId, MoveDef> = {
     idealY: 0.8,
     win: 0.95,
     desc: "Feather-soft. Dies right over the line.",
-        key: "RIGHT CLICK",
-    },
+    key: "RIGHT CLICK",
+  },
 };
 
 // ── Roster ──────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export interface BotDef {
   color: string;
   accent: string;
   screen: string;
-    skill: number; // 0..1
+  skill: number; // 0..1
   speed: number;
   tag: string;
   aggression: number; // smash/skimmer preference
@@ -127,47 +127,47 @@ export interface BotDef {
 
 export const BOTS: Record<Exclude<EntityId, "player">, BotDef> = {
   ada: {
-    name: "ADA-9000",
+    name: "ADA",
     short: "ADA",
     color: "#e2483d",
     accent: "#ffd23e",
-        screen: "#1a0e0c",
-    skill: 0.88,
-    speed: 3.7,
-    tag: "The Calculator · never misses on purpose",
+    screen: "#1a0e0c",
+    skill: 0.96,
+    speed: 4.6,
+    tag: "math wiz",
     aggression: 0.85,
   },
   grace: {
-    name: "GRACE-3K",
-    short: "GRA",
+    name: "GRACE",
+    short: "GRACE",
     color: "#f7b32b",
     accent: "#233043",
     screen: "#171207",
-        skill: 0.79,
-    speed: 3.3,
-    tag: "Skip-shot surgeon",
+    skill: 0.91,
+    speed: 4.2,
+    tag: "surgeon",
     aggression: 0.6,
   },
   alan: {
-        name: "ALAN.EXE",
-    short: "ALN",
+    name: "ALAN",
+    short: "ALAN",
     color: "#39b46a",
     accent: "#eaf6ff",
-        screen: "#0a1710",
-    skill: 0.7,
-    speed: 3.0,
-    tag: "Lob machine, slow to boot",
+    screen: "#0a1710",
+    skill: 0.85,
+    speed: 3.85,
+    tag: "lobber",
     aggression: 0.3,
   },
   turing: {
-    name: "TURIN-BOT",
-    short: "TUR",
+    name: "TURIN",
+    short: "TURIN",
     color: "#8a5cf6",
     accent: "#ffe9a8",
     screen: "#120a1e",
-        skill: 0.6,
-    speed: 2.8,
-    tag: "Cherry-bomb chaos unit",
+    skill: 0.79,
+    speed: 3.6,
+    tag: "wildcard",
     aggression: 0.7,
   },
 };
@@ -176,26 +176,8 @@ export const INITIAL_ASSIGN: Record<number, EntityId> = {
   1: "player",
   2: "turing",
   3: "grace",
-    4: "ada",
+  4: "ada",
 };
 export const INITIAL_LINE: EntityId = "alan";
 
 export const LINE_SPOT: [number, number] = [-6.4, -0.4];
-
-}
-  }
-  }
-  }
-  }
-}
-}
-    }
-  }
-  }
-  }
-  }
-}
-}
-}
-}
-]
