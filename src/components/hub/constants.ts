@@ -20,12 +20,6 @@ export const TETHER_POS: [number, number, number] = [7, 0, 4];
 /** Wall plane sits here; the court extends south (+Z) about 5.4 m */
 export const WALL_POS: [number, number, number] = [0, 0, -10];
 
-/** Tag field entrance, west of the spawn corridor. */
-export const TAG_POS: [number, number, number] = [-3.8, 0, 9.0];
-
-/** Kickball diamond entrance, east of the spawn corridor. */
-export const KICKBALL_POS: [number, number, number] = [3.8, 0, 9.0];
-
 /** Where the player drops in — open corridor, south of both courts */
 export const SPAWN: [number, number, number] = [0, 0, 10];
 
@@ -79,3 +73,6 @@ export const SWING_FACING = SWING_ROT_Y - Math.PI;
 
 /** Clear patch of blacktop to hop down onto, in front of the frame. */
 export const SWING_DISMOUNT = swingLocalToWorld(SWING_SEAT_X, 0, -1.8);
+
+/** Tag game: player enters by pressing E somewhere in the open yard centre */
+export const TAG_POS: [number, number, number] = [0, 0, 0];

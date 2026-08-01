@@ -40,9 +40,6 @@ export const BOXES: BoxCol[] = [
   { x: -8.8, z: 12.0,  hw: 1.9, hd: 0.6 },
   // slide platform
   { x:  8.8, z: 12.0,  hw: 0.7, hd: 0.7 },
-  // tag and kickball entrance markers
-  { x: -3.8, z: 9.0, hw: 0.7, hd: 0.5 },
-  { x:  3.8, z: 9.0, hw: 0.7, hd: 0.5 },
 ];
 
 /**

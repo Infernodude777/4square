@@ -135,7 +135,9 @@ export function WallDirector() {
         t.banner = youWon ? "GAME — YOU WIN" : "GAME — ZIGGY WINS";
         t.bannerSub = `${t.playerScore} – ${t.opScore}`;
         t.bannerAt = t.time;
-        if (youWon) { st.addScore(t.playerScore * 2); sfx.win(); } else sfx.fault();
+        // Stash the real match tally for the victory screen.
+        st.setWallResult(t.playerScore, t.opScore);
+        if (youWon) { st.addScore(10); sfx.win(); } else sfx.fault();
         st.setPhase("point");
         winTimer.current = window.setTimeout(() => {
           const g = useGame.getState();
@@ -184,6 +186,7 @@ export function WallDirector() {
       }
       if (res.applied) {
         t.playerSwing = 0;
+        st.rallyInc();
         // Shot name already lives on the timing meter; only celebrate a
         // genuinely perfect strike.
         if (res.perfect) { st.popup("PERFECT", "gold", true); sfx.perfect(); }
@@ -245,6 +248,7 @@ export function WallDirector() {
       );
       if (res.applied) {
         t.opSwing = 0;
+        useGame.getState().rallyInc();
         sfx.botHit();
       }
       return;
@@ -393,6 +397,7 @@ export function WallDirector() {
     if (res.applied) {
       t.opSwing = 0;
       t.opCooldown = 0.3 + Math.random() * 0.15;
+      useGame.getState().rallyInc();
       sfx.botHit();
       // Only announce ZIGGY's genuinely dangerous shots — no drive spam.
       if (res.kind !== "drive") {

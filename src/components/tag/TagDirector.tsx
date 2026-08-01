@@ -3,165 +3,389 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
-import { TAG, resetTag } from "./tagState";
-import { TAG_FIELD, TAG_IDS, clampTagPosition, moveTagPerson, nearestTagTarget } from "../../game/tag";
+import {
+  TAG_YARD_HALF, TAG_REACH, IT_IMMUNITY,
+  FREEZE_UNFREEZE_R, SPRINT_MUL, BOTS, BOT_IDS,
+  createTagState, checkRoundEnd, blobCanTag, blobMembers,
+  type TagState, type TagEntity,
+} from "../../game/tag";
 
+// ── Shared mutable state (outside React) ─────────────────────
+export let TS: TagState = createTagState();
+
+const PLAYER_SPEED = 4.6;
+const PLAYER_SPRINT_SPEED = PLAYER_SPEED * SPRINT_MUL;
+const GRAV = 18;
+
+// Clamp helper
+const cl = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+// Input
 const keys = { w: false, a: false, s: false, d: false, shift: false };
-const aim = new THREE.Vector3();
-const ray = new THREE.Raycaster();
-const ndc = new THREE.Vector2();
-const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+
+// Per-bot AI state (reaction timer, wander target)
+const botAI: Record<string, { wander: { x: number; z: number }; reactCd: number }> = {};
+BOT_IDS.forEach(id => { botAI[id] = { wander: { x: 0, z: 0 }, reactCd: 0 }; });
+
+function randomWander(): { x: number; z: number } {
+  const angle = Math.random() * Math.PI * 2;
+  const r = 2 + Math.random() * 6;
+  return { x: cl(Math.cos(angle) * r, -TAG_YARD_HALF + 1, TAG_YARD_HALF - 1), z: cl(Math.sin(angle) * r, -TAG_YARD_HALF + 1, TAG_YARD_HALF - 1) };
+}
+
+export function resetTag() {
+  TS = createTagState();
+  BOT_IDS.forEach(id => {
+    botAI[id].wander = randomWander();
+    botAI[id].reactCd = BOTS[id].react;
+  });
+}
 
 export function TagDirector() {
   const { camera } = useThree();
-  const phase = useGame((state) => state.phase);
-  const previousPhase = useRef(phase);
-  const look = useRef(new THREE.Vector3(0, 0.5, 0));
-  const winTimer = useRef<number | null>(null);
+  const phase      = useGame(s => s.phase);
+  const prevPhase  = useRef("hub");
+  const camLook    = useRef(new THREE.Vector3(0, 0, 0));
+  const winTimer   = useRef<number | null>(null);
 
   useEffect(() => {
-    const down = (event: KeyboardEvent) => {
+    const kd = (e: KeyboardEvent) => {
       if (useGame.getState().phase !== "play") return;
-      if (event.code === "KeyW" || event.code === "ArrowUp") keys.w = true;
-      if (event.code === "KeyA" || event.code === "ArrowLeft") keys.a = true;
-      if (event.code === "KeyS" || event.code === "ArrowDown") keys.s = true;
-      if (event.code === "KeyD" || event.code === "ArrowRight") keys.d = true;
-      if (event.code === "ShiftLeft" || event.code === "ShiftRight") keys.shift = true;
+      if (e.code === "KeyW" || e.code === "ArrowUp")    keys.w = true;
+      if (e.code === "KeyS" || e.code === "ArrowDown")  keys.s = true;
+      if (e.code === "KeyA" || e.code === "ArrowLeft")  keys.a = true;
+      if (e.code === "KeyD" || e.code === "ArrowRight") keys.d = true;
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") keys.shift = true;
     };
-    const up = (event: KeyboardEvent) => {
-      if (event.code === "KeyW" || event.code === "ArrowUp") keys.w = false;
-      if (event.code === "KeyA" || event.code === "ArrowLeft") keys.a = false;
-      if (event.code === "KeyS" || event.code === "ArrowDown") keys.s = false;
-      if (event.code === "KeyD" || event.code === "ArrowRight") keys.d = false;
-      if (event.code === "ShiftLeft" || event.code === "ShiftRight") keys.shift = false;
+    const ku = (e: KeyboardEvent) => {
+      if (e.code === "KeyW" || e.code === "ArrowUp")    keys.w = false;
+      if (e.code === "KeyS" || e.code === "ArrowDown")  keys.s = false;
+      if (e.code === "KeyA" || e.code === "ArrowLeft")  keys.a = false;
+      if (e.code === "KeyD" || e.code === "ArrowRight") keys.d = false;
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") keys.shift = false;
     };
-    const mouse = (event: MouseEvent) => {
-      ndc.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
-    };
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
-    window.addEventListener("mousemove", mouse);
-    return () => {
-      window.removeEventListener("keydown", down);
-      window.removeEventListener("keyup", up);
-      window.removeEventListener("mousemove", mouse);
-      keys.w = false; keys.a = false; keys.s = false; keys.d = false; keys.shift = false;
-      if (winTimer.current !== null) window.clearTimeout(winTimer.current);
-    };
+    window.addEventListener("keydown", kd);
+    window.addEventListener("keyup", ku);
+    return () => { window.removeEventListener("keydown", kd); window.removeEventListener("keyup", ku); };
   }, []);
 
-  useFrame((_, rawDelta) => {
-    const dt = Math.min(rawDelta, 0.04);
-    if (phase !== "play") {
-      if (phase === "menu" || phase === "hub") camera.lookAt(look.current);
-      return;
-    }
+  useFrame((_, deltaRaw) => {
+    const dt = Math.min(deltaRaw, 0.04);
+    const st = useGame.getState();
+    if (st.mode !== "tag") return;
 
-    if (previousPhase.current !== "play") {
+    const t = TS;
+
+    // ── Init on first play frame ──────────────────────────────
+    if (phase === "play" && prevPhase.current !== "play" && prevPhase.current !== "point") {
       resetTag();
-      TAG.current.phase = "live";
       sfx.whistle();
     }
-    previousPhase.current = phase;
+    prevPhase.current = phase;
 
-    const state = TAG.current;
-    state.time += dt;
-    if (state.time >= TAG_FIELD.roundSeconds && state.phase === "live") {
-      state.phase = "won";
-      useGame.getState().popup(state.score > 0 ? `FIELD TIME · ${state.score} TAGS` : "FIELD TIME · RUN IT BACK", state.score > 0 ? "gold" : "white", true);
-      winTimer.current = window.setTimeout(() => {
-        if (useGame.getState().phase === "play") useGame.getState().win();
-      }, 1100);
+    if (phase !== "play") { doCam(dt); return; }
+    if (t.phase === "end") { doCam(dt); return; }
+
+    t.time += dt;
+
+    // ── Countdown ─────────────────────────────────────────────
+    if (t.phase === "countdown") {
+      t.countdown -= dt;
+      if (t.countdown <= 0) {
+        t.phase = "play";
+        t.banner = "GO!";
+        t.bannerAt = t.time;
+        sfx.whistle();
+      }
+      doCam(dt);
       return;
     }
 
-    state.tagCooldown = Math.max(0, state.tagCooldown - dt);
-    for (const id of TAG_IDS) state.people[id].taggedFlash = Math.max(0, state.people[id].taggedFlash - dt);
+    // ── Round timer ───────────────────────────────────────────
+    t.roundTimer -= dt;
+    if (t.roundTimer < 0) t.roundTimer = 0;
 
-    const player = state.people.player;
-    const activeIt = state.people[state.currentIt];
-    ray.setFromCamera(ndc, camera);
-    if (!ray.ray.intersectPlane(plane, aim)) aim.set(player.pos.x, 0, player.pos.z - 1);
+    // ── Tick immunity & it-time ───────────────────────────────
+    Object.values(t.entities).forEach(e => {
+      if (e.immunity > 0) e.immunity -= dt;
+      if (e.isIt && t.mode === "regular") e.itTime += dt;
+    });
 
-    let moveX = 0;
-    let moveZ = 0;
-    if (keys.w) moveZ -= 1;
-    if (keys.s) moveZ += 1;
-    if (keys.a) moveX -= 1;
-    if (keys.d) moveX += 1;
-    const length = Math.hypot(moveX, moveZ) || 1;
-    const moving = moveX !== 0 || moveZ !== 0;
-    const sprinting = keys.shift && moving;
-    if (moving) {
-      const distance = sprinting ? 2.8 : 1.8;
-      player.target.set(player.pos.x + (moveX / length) * distance, 0, player.pos.z + (moveZ / length) * distance);
-      clampTagPosition(player.target);
-    } else {
-      player.target.copy(player.pos);
-    }
-    moveTagPerson(player, dt, sprinting);
-    player.facing = Math.atan2(aim.x - player.pos.x, aim.z - player.pos.z);
-
-    for (const id of TAG_IDS) {
-      if (id === "player") continue;
-      const person = state.people[id];
-      const target = nearestTagTarget(state, id, id === state.currentIt);
-      if (!target) continue;
-      const dx = target.pos.x - person.pos.x;
-      const dz = target.pos.z - person.pos.z;
-      const distance = Math.hypot(dx, dz) || 1;
-      if (id === state.currentIt) {
-        person.target.set(target.pos.x, 0, target.pos.z);
-      } else {
-        const side = id.length % 2 ? 1 : -1;
-        person.target.set(person.pos.x - (dx / distance) * 2.4 + side * (dz / distance) * 1.2, 0, person.pos.z - (dz / distance) * 2.4 - side * (dx / distance) * 1.2);
-        clampTagPosition(person.target);
+    // ── Player movement ───────────────────────────────────────
+    const p = t.entities["player"];
+    {
+      let mx = 0, mz = 0;
+      if (keys.w) mz -= 1;
+      if (keys.s) mz += 1;
+      if (keys.a) mx -= 1;
+      if (keys.d) mx += 1;
+      const l = Math.hypot(mx, mz) || 1;
+      mx /= l; mz /= l;
+      const moving = Math.abs(mx) + Math.abs(mz) > 0.01;
+      const spd = keys.shift ? PLAYER_SPRINT_SPEED : PLAYER_SPEED;
+      if (moving) {
+        p.pos.x = cl(p.pos.x + mx * spd * dt, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        p.pos.z = cl(p.pos.z + mz * spd * dt, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        p.facing = Math.atan2(mx, mz);
+        p.walkPhase += dt * (keys.shift ? 14 : 10);
       }
-      moveTagPerson(person, dt, id === state.currentIt);
+      p.moving = moving;
     }
 
-    if (state.tagCooldown <= 0) {
-      const chaser = state.people[state.currentIt];
-      for (const id of TAG_IDS) {
-        if (id === state.currentIt) continue;
-        const victim = state.people[id];
-        if (chaser.pos.distanceTo(victim.pos) >= TAG_FIELD.tagRange) continue;
-        state.currentIt = id;
-        state.tagCooldown = 1.2;
-        state.lastTagAt = state.time;
-        victim.taggedFlash = 0.8;
-        chaser.taggedFlash = 0.8;
-        if (chaser.id === "player") {
-          state.score += 1;
-          useGame.getState().addScore(1);
-          useGame.getState().popup(`TAGGED ${victim.name} · +1`, "gold", true);
-          sfx.cheer();
-        } else if (victim.id === "player") {
-          useGame.getState().popup(`YOU'RE IT · ${chaser.name} GOT YOU`, "red", true);
-          sfx.fault();
-        } else {
-          useGame.getState().popup(`${chaser.name} TAGGED ${victim.name}`, "white");
-          sfx.hit(0.5);
+    // ── Bot AI ────────────────────────────────────────────────
+    BOT_IDS.forEach(id => {
+      const bot = t.entities[id];
+      const def = BOTS[id];
+      const ai  = botAI[id];
+      ai.reactCd -= dt;
+      if (ai.reactCd > 0) return;
+      ai.reactCd = def.react + Math.random() * def.react * 0.5;
+      updateBotTarget(t, bot, def, ai);
+    });
+
+    // ── Move all entities toward their targets ────────────────
+    BOT_IDS.forEach(id => {
+      const bot = t.entities[id];
+      const def = BOTS[id];
+      const ai  = botAI[id];
+
+      // Blob members follow the entity ahead of them in the chain
+      if (t.mode === "blob" && bot.blobIdx > 0) {
+        const m = blobMembers(t.entities);
+        if (bot.blobIdx < m.length) {
+          const leader = m[bot.blobIdx - 1];
+          ai.wander = { ...leader.pos };
+          // Maintain minimum spacing
+          const dx = bot.pos.x - leader.pos.x;
+          const dz = bot.pos.z - leader.pos.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < 0.85) { ai.wander = bot.pos; }
         }
-        break;
+      }
+
+      const dx = ai.wander.x - bot.pos.x;
+      const dz = ai.wander.z - bot.pos.z;
+      const d  = Math.hypot(dx, dz);
+      if (d > 0.1) {
+        const spd = (bot.isIt && t.mode !== "blob") ? def.speed * 1.08 : def.speed;
+        const step = Math.min(d, spd * dt);
+        bot.pos.x = cl(bot.pos.x + (dx / d) * step, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        bot.pos.z = cl(bot.pos.z + (dz / d) * step, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        bot.facing = Math.atan2(dx / d, dz / d);
+        bot.walkPhase += dt * 10;
+        bot.moving = true;
+      } else {
+        bot.moving = false;
+      }
+    });
+
+    // ── Tag resolution ─────────────────────────────────────────
+    resolveTagging(t);
+
+    // ── Freeze unfreeze (freeze tag) ───────────────────────────
+    if (t.mode === "freeze") resolveUnfreezing(t);
+
+    // ── Check round end ────────────────────────────────────────
+    if (checkRoundEnd(t)) {
+      if (winTimer.current === null) {
+        const youWon = t.winnerMsg.startsWith("YOU");
+        if (youWon) { sfx.cheer(); st.addScore(15); }
+        else sfx.fault();
+        st.setPhase("point");
+        winTimer.current = window.setTimeout(() => {
+          useGame.getState().win();
+          winTimer.current = null;
+        }, 3200);
       }
     }
 
-    if (state.score >= TAG_FIELD.goal && state.phase === "live") {
-      state.phase = "won";
-      useGame.getState().rallyInc();
-      useGame.getState().popup("FIELD CHAMP · SEVEN TAGS", "gold", true);
-      winTimer.current = window.setTimeout(() => {
-        if (useGame.getState().phase === "play") useGame.getState().win();
-      }, 900);
-    }
-
-    const centre = player.pos.clone().lerp(activeIt.pos, 0.22);
-    const cameraTarget = new THREE.Vector3(player.pos.x * 0.2, 7.1, player.pos.z + 9.2);
-    camera.position.lerp(cameraTarget, 1 - Math.exp(-dt * 3.6));
-    look.current.lerp(centre.setY(0.5), 1 - Math.exp(-dt * 5));
-    camera.lookAt(look.current);
+    doCam(dt);
   });
+
+  function doCam(dt: number) {
+    const p = TS.entities["player"];
+    if (!p) { camera.position.set(0, 14, 12); camera.lookAt(0, 0, 0); return; }
+    const cx = p.pos.x * 0.35;
+    const cy = 15;
+    const cz = p.pos.z + 12;
+    const lx = p.pos.x * 0.6;
+    const lz = p.pos.z - 2;
+    const k  = 1 - Math.exp(-dt * 3.8);
+    const k2 = 1 - Math.exp(-dt * 5.2);
+    camera.position.x += (cx - camera.position.x) * k;
+    camera.position.y += (cy - camera.position.y) * k;
+    camera.position.z += (cz - camera.position.z) * k;
+    camLook.current.x += (lx - camLook.current.x) * k2;
+    camLook.current.y += (0 - camLook.current.y) * k2;
+    camLook.current.z += (lz - camLook.current.z) * k2;
+    camera.lookAt(camLook.current);
+    void GRAV;
+  }
 
   return null;
 }
+
+// ── Bot target decision ────────────────────────────────────────
+function updateBotTarget(
+  t: TagState, bot: TagEntity,
+  def: (typeof BOTS)[string],
+  ai: { wander: { x: number; z: number } },
+) {
+  const all = Object.values(t.entities);
+
+  if (t.mode === "regular" || t.mode === "blob") {
+    if (bot.isIt || (t.mode === "blob" && bot.blobIdx === 0)) {
+      // "it" or blob head: chase the nearest free target
+      const targets = all.filter(e =>
+        e.id !== bot.id &&
+        e.immunity <= 0 &&
+        (t.mode === "blob" ? e.blobIdx < 0 : !e.isIt),
+      );
+      if (targets.length > 0) {
+        const nearest = targets.reduce((a, b) => dist(bot, a) < dist(bot, b) ? a : b);
+        ai.wander = { ...nearest.pos };
+        // Add slight jitter so it looks natural
+        ai.wander.x += (Math.random() - 0.5) * 0.4;
+        ai.wander.z += (Math.random() - 0.5) * 0.4;
+      }
+    } else if (t.mode === "blob" && bot.blobIdx > 0) {
+      // Blob followers handled in move loop
+    } else {
+      // Regular tag: runner — flee from "it"
+      runFrom(t, bot, def, ai);
+    }
+  } else {
+    // Freeze tag
+    if (bot.isIt) {
+      const targets = all.filter(e => !e.isIt && !e.frozen && e.immunity <= 0);
+      if (targets.length > 0) {
+        const nearest = targets.reduce((a, b) => dist(bot, a) < dist(bot, b) ? a : b);
+        ai.wander = { ...nearest.pos };
+      } else {
+        ai.wander = randomWander();
+      }
+    } else if (bot.frozen) {
+      ai.wander = { ...bot.pos }; // stay put
+    } else {
+      // Brave bots prioritise unfreezing teammates
+      const frozen = all.filter(e => e.frozen && !e.isIt);
+      if (frozen.length > 0 && Math.random() < def.brave) {
+        const nearest = frozen.reduce((a, b) => dist(bot, a) < dist(bot, b) ? a : b);
+        ai.wander = { ...nearest.pos };
+      } else {
+        runFrom(t, bot, def, ai);
+      }
+    }
+  }
+}
+
+function runFrom(
+  t: TagState, bot: TagEntity,
+  def: (typeof BOTS)[string],
+  ai: { wander: { x: number; z: number } },
+) {
+  // Find "it" or blob head to flee from
+  let itPos: { x: number; z: number } | null = null;
+  if (t.mode === "blob") {
+    const head = Object.values(t.entities).find(e => e.blobIdx === 0);
+    if (head) itPos = head.pos;
+  } else {
+    const it = t.entities[t.itId];
+    if (it) itPos = it.pos;
+  }
+  if (!itPos) { ai.wander = randomWander(); return; }
+
+  const dx = bot.pos.x - itPos.x;
+  const dz = bot.pos.z - itPos.z;
+  const d  = Math.hypot(dx, dz) || 1;
+  // Fear factor: close = run hard, far = wander
+  const danger = Math.max(0, 1 - d / 8);
+  if (danger > def.fear * 0.4 || Math.random() < danger) {
+    const fleeX = cl(bot.pos.x + (dx / d) * 5, -TAG_YARD_HALF + 1, TAG_YARD_HALF - 1);
+    const fleeZ = cl(bot.pos.z + (dz / d) * 5, -TAG_YARD_HALF + 1, TAG_YARD_HALF - 1);
+    ai.wander = { x: fleeX + (Math.random() - 0.5) * 2, z: fleeZ + (Math.random() - 0.5) * 2 };
+  } else {
+    ai.wander = randomWander();
+  }
+}
+
+// ── Tag detection and application ──────────────────────────────
+function resolveTagging(t: TagState) {
+  const all = Object.values(t.entities);
+
+  if (t.mode === "regular") {
+    const it = t.entities[t.itId];
+    if (!it) return;
+    for (const target of all) {
+      if (target.id === it.id) continue;
+      if (target.isIt) continue;
+      if (target.immunity > 0) continue;
+      if (dist2(it, target) > TAG_REACH) continue;
+      // Tag!
+      it.isIt = false;
+      target.isIt = true;
+      target.immunity = IT_IMMUNITY;
+      t.itId = target.id;
+      t.banner = target.isPlayer ? "YOU'RE IT!" : `${target.id.toUpperCase()} IS IT!`;
+      t.bannerAt = t.time;
+      sfx.hit(0.8);
+      break;
+    }
+  } else if (t.mode === "freeze") {
+    const it = t.entities[t.itId];
+    if (!it) return;
+    for (const target of all) {
+      if (target.id === it.id) continue;
+      if (target.frozen) continue;
+      if (target.immunity > 0) continue;
+      if (dist2(it, target) > TAG_REACH) continue;
+      target.frozen = true;
+      t.banner = target.isPlayer ? "YOU'RE FROZEN!" : `${target.id.toUpperCase()} FROZEN!`;
+      t.bannerAt = t.time;
+      sfx.hit(0.8);
+    }
+  } else {
+    // Blob tag — only end-members of the blob chain can tag
+    const taggers = all.filter(e => blobCanTag(e, t.entities));
+    const free = all.filter(e => e.blobIdx < 0);
+    for (const tagger of taggers) {
+      for (const target of free) {
+        if (target.immunity > 0) continue;
+        if (dist2(tagger, target) > TAG_REACH) continue;
+        // Append to blob chain
+        target.blobIdx = t.blobSize;
+        t.blobSize++;
+        target.immunity = IT_IMMUNITY;
+        t.banner = target.isPlayer ? "YOU JOINED THE BLOB!" : `${target.id.toUpperCase()} ABSORBED!`;
+        t.bannerAt = t.time;
+        sfx.hit(0.8);
+        sfx.line();
+        break;
+      }
+    }
+  }
+}
+
+// ── Freeze-tag unfreezing ──────────────────────────────────────
+function resolveUnfreezing(t: TagState) {
+  const all = Object.values(t.entities);
+  const frozen = all.filter(e => e.frozen);
+  const free = all.filter(e => !e.frozen && !e.isIt);
+  for (const frz of frozen) {
+    for (const liberator of free) {
+      if (dist2(frz, liberator) < FREEZE_UNFREEZE_R) {
+        frz.frozen = false;
+        frz.immunity = 1.0;
+        t.banner = `${frz.id.toUpperCase()} UNFROZEN!`;
+        t.bannerAt = t.time;
+        sfx.cheer();
+        break;
+      }
+    }
+  }
+}
+
+// ── Utils ──────────────────────────────────────────────────────
+function dist(a: TagEntity, b: TagEntity) { return Math.hypot(a.pos.x - b.pos.x, a.pos.z - b.pos.z); }
+function dist2(a: TagEntity, b: TagEntity) { return Math.hypot(a.pos.x - b.pos.x, a.pos.z - b.pos.z); }

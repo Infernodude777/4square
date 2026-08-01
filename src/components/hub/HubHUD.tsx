@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { RT } from "../../game/refs";
-import { FOUR_SQUARE_POS, TETHER_POS, WALL_POS, TAG_POS, KICKBALL_POS, SWING_POS } from "./constants";
+import { FOUR_SQUARE_POS, TETHER_POS, WALL_POS, SWING_POS, TAG_POS } from "./constants";
 
 function dist(pos: [number, number, number]) {
   const p = RT.entities.player.pos;
@@ -8,7 +8,7 @@ function dist(pos: [number, number, number]) {
 }
 
 export function HubHUD() {
-  const [near, setNear] = useState<"foursquare" | "tetherball" | "wallball" | "tag" | "kickball" | "swing" | null>(null);
+  const [near, setNear] = useState<"foursquare" | "tetherball" | "wallball" | "swing" | "tag" | null>(null);
   const [activeSwing, setActiveSwing] = useState(false);
 
   useEffect(() => {
@@ -21,19 +21,18 @@ export function HubHUD() {
         return;
       }
 
-      const d4 = dist(FOUR_SQUARE_POS);
-      const dt = dist(TETHER_POS);
-      const dw = dist(WALL_POS);
+      const d4   = dist(FOUR_SQUARE_POS);
+      const dt   = dist(TETHER_POS);
+      const dw   = dist(WALL_POS);
+      const ds   = dist(SWING_POS);
       const dtag = dist(TAG_POS);
-      const dkick = dist(KICKBALL_POS);
-      const ds = dist(SWING_POS);
+      const nearCourt = d4 < 5.5 || dt < 4.8 || dw < 6.0 || ds < 2.5;
       
       if (ds < 2.0 && ds <= d4 && ds <= dt && ds <= dw) setNear("swing");
-      else if (dtag < 3.0 && dtag <= dkick && dtag <= d4 && dtag <= dt && dtag <= dw) setNear("tag");
-      else if (dkick < 3.0 && dkick <= dtag && dkick <= d4 && dkick <= dt && dkick <= dw) setNear("kickball");
       else if (d4 < 5.2 && d4 <= dt && d4 <= dw) setNear("foursquare");
       else if (dt < 4.4 && dt <= dw) setNear("tetherball");
       else if (dw < 5.6) setNear("wallball");
+      else if (!nearCourt && dtag < 9.0) setNear("tag");
       else setNear(null);
     }, 90);
     return () => clearInterval(id);
@@ -45,10 +44,10 @@ export function HubHUD() {
         {near ? (
           <div className="animate-bannerin rounded-2xl border-2 border-[#ffd23e] bg-[#10141c]/85 px-7 py-4 backdrop-blur-sm">
             <div className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-white/45">
-              {near === "foursquare" ? "Four Square" : near === "tetherball" ? "Tetherball" : near === "wallball" ? "Wallball" : near === "tag" ? "Tag: Last One Standing" : near === "kickball" ? "Kickball: Diamond Dash" : "Playground Swing"}
+              {near === "foursquare" ? "Four Square" : near === "tetherball" ? "Tetherball" : near === "wallball" ? "Wallball" : near === "tag" ? "TAG!" : "Playground Swing"}
             </div>
             <div className="font-display text-3xl text-[#ffd23e]">
-              {near === "swing" ? (activeSwing ? "Press E to jump off" : "Press E to swing") : "Press E to play"}
+              {near === "swing" ? (activeSwing ? "Press E to jump off" : "Press E to swing") : near === "tag" ? "Press E to play Tag!" : "Press E to play"}
             </div>
           </div>
         ) : (

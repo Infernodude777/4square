@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { MOVES, TARGET_SCORE, type MoveId } from "../game/constants";
 import { RT } from "../game/refs";
 import { useGame, type Popup } from "../game/store";
@@ -65,7 +65,14 @@ function PopupItem({ p }: { p: Popup }) {
 
 /* ── timing meter (bottom-center, only when player can hit) ── */
 function TimingMeter() {
-  const snap = useRef({ stance: "stand" as const, move: "drive" as MoveId, rel: 0, canHit: false } as { stance: "stand" | "crouch" | "air"; move: MoveId; rel: number; canHit: boolean });
+  // Holds a live snapshot of the rally so the meter can re-render as the
+  // ball rises and falls. State (not a ref) so the component actually updates.
+  const [snap, setSnap] = useState<{
+    stance: "stand" | "crouch" | "air";
+    move: MoveId;
+    rel: number;
+    canHit: boolean;
+  }>({ stance: "stand", move: "drive", rel: 0, canHit: false });
 
   useEffect(() => {
     const iv = setInterval(() => {
@@ -77,12 +84,12 @@ function TimingMeter() {
       const stance = p.crouch ? "crouch" : p.y > 0.3 ? "air" : "stand";
       const move =
         stance === "crouch" ? "skimmer" : stance === "air" ? "smash" : RT.input.lob ? "lob" : "drive";
-      snap.current = { stance, move, rel: Math.max(0, RT.ball.pos.y - p.y), canHit };
+      setSnap({ stance, move, rel: Math.max(0, RT.ball.pos.y - p.y), canHit });
     }, 70);
     return () => clearInterval(iv);
   }, []);
 
-  const s = snap.current;
+  const s = snap;
   if (!s.canHit) return null;
 
   const md = MOVES[s.move];

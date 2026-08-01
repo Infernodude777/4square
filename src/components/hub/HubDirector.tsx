@@ -7,8 +7,9 @@ import { beginServe } from "../../game/tetherball";
 import { resetTether, TS } from "../tether/tetherState";
 import { sfx } from "../../game/audio";
 import {
-  FOUR_SQUARE_POS, TETHER_POS, WALL_POS, TAG_POS, KICKBALL_POS, SPAWN,
+  FOUR_SQUARE_POS, TETHER_POS, WALL_POS, SPAWN,
   SWING_POS, SWING_FACING, SWING_DISMOUNT, swingSeat,
+  TAG_POS,
 } from "./constants";
 import { resolveCollisions } from "./colliders";
 
@@ -64,18 +65,18 @@ export function HubDirector() {
         const d4 = dist2D(player, FOUR_SQUARE_POS);
         const dt = dist2D(player, TETHER_POS);
         const dw = dist2D(player, WALL_POS);
-        const dtag = dist2D(player, TAG_POS);
-        const dkick = dist2D(player, KICKBALL_POS);
         const ds = dist2D(player, SWING_POS);
+        // Tag zone is the open centre — player must be far from all courts
+        const dtag = dist2D(player, TAG_POS);
+        const nearAnyCourt = d4 < 5.5 || dt < 4.8 || dw < 6.0 || ds < 2.5;
 
         if (ds < 2.0 && ds <= d4 && ds <= dt && ds <= dw) {
           swinging = true;
           sfx.ui();
-        } else if (dtag < 3.0 && dtag <= dkick && dtag <= d4 && dtag <= dt && dtag <= dw) start("tag");
-        else if (dkick < 3.0 && dkick <= dtag && dkick <= d4 && dkick <= dt && dkick <= dw) start("kickball");
-        else if (d4 < 5.2 && d4 <= dt && d4 <= dw) start("foursquare");
+        } else if (d4 < 5.2 && d4 <= dt && d4 <= dw) start("foursquare");
         else if (dt < 4.4 && dt <= dw) start("tetherball");
         else if (dw < 5.6) start("wallball");
+        else if (!nearAnyCourt && dtag < 9.0) start("tag");
       }
     };
     const up = (e: KeyboardEvent) => {

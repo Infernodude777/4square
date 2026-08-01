@@ -51,6 +51,7 @@ export function TetherRig({ side }: RigProps) {
   const legR = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
   const lastFace = useRef<FaceState>("idle");
+  const lastPos = useRef(new THREE.Vector3());
 
   useFrame(({ clock }) => {
     const t = TS.current;
@@ -70,11 +71,13 @@ export function TetherRig({ side }: RigProps) {
     body.current.scale.y += (cr - body.current.scale.y) * 0.35;
     body.current.position.y = (body.current.scale.y - 1) * 0.48;
 
-    // walk sway when hitting/moving
+    // walk sway when the rig is actually moving (player: WASD deltas,
+    // bot: distance remaining to its current target)
     const moving =
       isPlayer
-        ? Math.hypot(t.ballVel.x, t.ballVel.z) > 0.4 || true
+        ? lastPos.current.distanceTo(t.playerPos) > 0.04
         : Math.hypot(t.opTarget.x - t.opPos.x, t.opTarget.z - t.opPos.z) > 0.08;
+    lastPos.current.copy(isPlayer ? t.playerPos : t.opPos);
     const sw = moving ? Math.sin(time * 6) * 0.35 : 0;
     if (legL.current) legL.current.rotation.x = sw;
     if (legR.current) legR.current.rotation.x = -sw;

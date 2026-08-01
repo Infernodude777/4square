@@ -3,7 +3,7 @@ import { INITIAL_ASSIGN, INITIAL_LINE, sqOf, type EntityId } from "./constants";
 import { sfx, setMuted } from "./audio";
 
 export type Phase = "hub" | "menu" | "play" | "point" | "win";
-export type Mode = "foursquare" | "tetherball" | "wallball" | "tag" | "kickball";
+export type Mode = "foursquare" | "tetherball" | "wallball" | "tag";
 
 export interface Popup {
   id: number;
@@ -27,6 +27,9 @@ interface GameState {
   wraps: number; // for tetherball: +ve = player winning, -ve = opponent winning
   fouls: number; // player fouls in tetherball
   opFouls: number;
+  /** final wallball match tally for the victory screen */
+  wallYou: number;
+  wallBot: number;
   assign: Record<number, EntityId>;
   line: EntityId;
   muted: boolean;
@@ -34,6 +37,7 @@ interface GameState {
   start: (mode?: Mode) => void;
   toMenu: () => void;
   setWraps: (n: number) => void;
+  setWallResult: (you: number, bot: number) => void;
   addFoul: (who: "player" | "op") => void;
   addScore: (n: number) => void;
   popup: (text: string, tone?: Popup["tone"], big?: boolean) => void;
@@ -53,6 +57,8 @@ export const useGame = create<GameState>((set, get) => ({
   wraps: 0,
   fouls: 0,
   opFouls: 0,
+  wallYou: 0,
+  wallBot: 0,
   score: 0,
   streak: 0,
   bestStreak: 0,
@@ -81,12 +87,15 @@ export const useGame = create<GameState>((set, get) => ({
       wraps: 0,
       fouls: 0,
       opFouls: 0,
+      wallYou: 0,
+      wallBot: 0,
       assign: { ...INITIAL_ASSIGN },
       line: INITIAL_LINE,
       popups: [],
     });
   },
   setWraps: (n) => set({ wraps: n }),
+  setWallResult: (you, bot) => set({ wallYou: you, wallBot: bot }),
   addFoul: (who) =>
     set((s) => (who === "player" ? { fouls: s.fouls + 1 } : { opFouls: s.opFouls + 1 })),
   toMenu: () => {

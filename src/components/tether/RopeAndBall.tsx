@@ -162,10 +162,16 @@ export function RopeAndBall() {
       arcGeoRef.current?.dispose();
       arcGeoRef.current = arcGeo;
       arcRef.current.geometry = arcGeo;
-      // Colour: gold when ball is at smash Y (>1.4), ice blue otherwise
+      // Required for LineDashedMaterial — computes lineDistance on the NEW
+      // geometry just attached (must run after the assignment).
+      arcRef.current.computeLineDistances();
+      // Colour: gold when ball is at smash Y (>1.4), ice blue otherwise.
+      // color/opacity are uniforms — no needsUpdate (that would recompile
+      // the shader every frame).
+      const isHigh = t.ballPos.y > BALL_GLOW_Y;
       const mat = arcRef.current.material as THREE.LineDashedMaterial;
-      // recompute dash pattern so arc re-renders correctly
-      mat.needsUpdate = true;
+      mat.color.set(isHigh ? "#ffd23e" : "#8fd8ff");
+      mat.opacity = isHigh ? 0.5 : 0.28;
       arcRef.current.visible = true;
     } else if (arcRef.current) {
       arcRef.current.visible = false;

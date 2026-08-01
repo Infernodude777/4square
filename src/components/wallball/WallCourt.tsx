@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import {
-  COURT_HALF_W, COURT_DEPTH, WALL_Z, WALL_HEIGHT, AIM_RING_R,
+  COURT_HALF_W, COURT_DEPTH, WALL_Z, WALL_HEIGHT, AIM_RING_R, predictLanding,
 } from "../../game/wallball";
 import { WS } from "./wallballState";
 
@@ -167,12 +167,10 @@ function LandingMarker() {
       mat.current.opacity = 0;
       return;
     }
-    const dy = t.ballPos.y - 0.13;
-    const disc = v.y * v.y + 2 * 17.0 * Math.max(0, dy);
-    const tt = (v.y + Math.sqrt(Math.max(0, disc))) / 17.0;
-    const x = t.ballPos.x + v.x * tt;
-    const z = t.ballPos.z + v.z * tt;
-    ref.current.position.set(x, 0.026, z);
+    // Use the same ballistic solver as the physics so the marker always
+    // matches the true landing spot (real GRAVITY, not a hardcoded value).
+    const land = predictLanding(t);
+    ref.current.position.set(land.x, 0.026, land.z);
     const mine = t.turn === "player" && t.hitWall;
     mat.current.color.set(mine ? "#7dff9a" : "#ff8a7a");
     mat.current.opacity = 0.42;
