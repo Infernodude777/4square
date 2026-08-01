@@ -1,80 +1,177 @@
-import { Text } from "@react-three/drei";
-import { World } from "../World";
-import { Court } from "../Court";
-import { Rig } from "../Rig";
-import { TetherCourt } from "../tether/TetherCourt";
-import { Pole } from "../tether/Pole";
-import { RopeAndBall } from "../tether/RopeAndBall";
-import { HubDirector } from "./HubDirector";
-import { FOUR_SQUARE_POS, TETHER_POS } from "./constants";
+import  Text } from @react-three/decodeURI;
+import  World } from ../World;
+import  Court } from ../Court;
+import  Rig } from ../Rig;
+import  TetherCourt } from ../tether/TetherCourt;
+import  Pole } from ../tether/Pole;
+import  RopeAndBall } from ../tether/RopeAndBall;
+import  HubDirector } from ./HubDirector;
+import  FOUR_SQUARE_POS, TETHER_POS, WALL_POS, TAG_POS, KICKBALL_POS } from ./constants;
 
-function ChalkSign({
-  title,
-  sub,
+/** A slim post-mounted sign that stands at the edge of each court. */
+function CourtSign
+   title,
   position,
-  color,
-}: {
+    color,
+  rotationY = 0,
+}: 
   title: string;
-  sub: string;
-  position: [number, number, number];
+    position: number, number, number];
   color: string;
-}) {
-  return (
-    <group position={position} rotation-x={-0.2}>
-      <mesh castShadow position={[0, 0, -0.04]}>
-        <boxGeometry args={[2.9, 1.15, 0.08]} />
-        <meshStandardMaterial color="#15222b" roughness={0.85} />
-      </mesh>
-      <mesh position={[0, 0, -0.085]}>
-        <boxGeometry args={[3.08, 1.32, 0.05]} />
-        <meshStandardMaterial color="#8a5a2e" roughness={0.8} />
-      </mesh>
-      <Text position={[0, 0.18, 0.03]} fontSize={0.26} color={color} anchorX="center" anchorY="middle">
-        {title}
-      </Text>
-      <Text position={[0, -0.18, 0.03]} fontSize={0.13} color="#f5f0df" anchorX="center" anchorY="middle">
-        {sub}
-      </Text>
+  rotationY?: number;
+}) 
+  return 
+    <group position=position} rotation-y=rotationY}>
+      /* two posts */}
+            -0.78, 0.78].mapx) => 
+        <mesh key=x} castShadow position=x, 0.62, 0]}>
+          <cylinderGeometry args=0.045, 0.05, 1.24, 8]} />
+          <meshStandardMaterial color=#6f7a85 metalness=0.5} roughness=0.5} />
+        </mesh>
+))}
+      /* board */}
+      <group position=0, 1.42, 0]}>
+        <mesh castShadow>
+          <boxGeometry args=2.0, 0.56, 0.07]} />
+          <meshStandardMaterial color=#16232c roughness=0.82} />
+        </mesh>        <mesh position=0, 0, -0.045]}>
+          <boxGeometry args=2.14, 0.7, 0.05]} />
+          <meshStandardMaterial color=color} roughness=0.6} />
+        </mesh>
+        <Text position=0, 0, 0.045]} fontSize=0.23} color=color} anchorX=center anchorY=middle>
+          title}
+        </Text>
+      </group>
     </group>
+);
+}
+
+/** Painted chalk arrow on the blacktop that points toward a court. */
+function GroundLabel
+  text,
+     position,
+  color,
+}: 
+  text: string;
+  position: number, number, number];
+    color: string;
+}) 
+  return 
+          position=position}
+                rotation-x=-Math.PI / 2}
+      fontSize=0.42}
+      color=color}
+      anchorX=center
+      anchorY=middle
+      fillOpacity=0.34}
+    >
+      text}
+    </Text>
   );
 }
 
-export function HubScene() {
-  return (
+export function HubScene) 
+  return 
     <>
-      <ambientLight intensity={0.32} />
-      <hemisphereLight args={["#d8ecff", "#7a8a66", 0.7]} />
-      <directionalLight
-        position={[16, 24, -12]}
-        intensity={1.6}
-        color="#fff2dd"
+      <ambientLight intensity=0.34} />
+      <hemisphereLight args=#dceeff, #7d8c68, 0.72]} />
+            <directionalLight
+        position=16, 26, -10]}
+        intensity=1.65}
+        color=#fff4e2
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-18}
-        shadow-camera-right={18}
-        shadow-camera-top={18}
-        shadow-camera-bottom={-18}
-        shadow-camera-near={1}
-        shadow-camera-far={60}
+        shadow-mapSize=2048, 2048]}
+        shadow-camera-left=-20}
+        shadow-camera-right=20}
+        shadow-camera-top=20}
+        shadow-camera-bottom=-20}
+        shadow-camera-near=1}
+                shadow-camera-far=64}
+        shadow-bias=-0.0004}
       />
+      <directionalLight position=-14, 12, 16]} intensity=0.32} color=#bcd6ff />
 
-      <World />
+            <World />
 
-      {/* Two playable courts live in the same playground. Walk up and press E. */}
-      <group position={FOUR_SQUARE_POS}>
+      /* ── FOUR SQUARE — west side ── */}
+      <group position=FOUR_SQUARE_POS}>
         <Court />
-        <ChalkSign title="FOUR SQUARE" sub="press E at the red line" position={[0, 1.2, -4.9]} color="#ffd23e" />
+        <CourtSign title=FOUR SQUARE position=0, 0, -5.4]} color=#ffd23e />
+        <GroundLabel text=press E position=0, 0.02, 5.3]} color=#fff3cf />
       </group>
 
-      <group position={TETHER_POS}>
+            /* ── TETHERBALL — east side ── */}
+      <group position=TETHER_POS}>
         <TetherCourt />
         <Pole />
         <RopeAndBall />
-        <ChalkSign title="TETHERBALL" sub="press E by the pole" position={[0, 1.2, -3.9]} color="#ff8a3c" />
+        <CourtSign title=TETHERBALL position=0, 0, -4.6]} color=#ff9a3c />
+        <GroundLabel text=press E position=0, 0.02, 4.5]} color=#ffe0c0 />
+              </group>
+      /* ── WALLBALL — north, against the building ── */}
+      <group position=WALL_POS}>
+        /* wall slab */}
+                <mesh position=0, 2.2, 0]} receiveShadow castShadow>
+          <boxGeometry args=6.6, 4.4, 0.45]} />
+          <meshStandardMaterial color=#9c6544 roughness=0.92} />
+        </mesh>
+        /* concrete kick plate */}
+                <mesh position=0, 0.13, 0.28]} receiveShadow>
+          <boxGeometry args=6.6, 0.26, 0.32]} />
+          <meshStandardMaterial color=#9aa0a6 roughness=0.9} />
+        </mesh>
+                /* roof lip */}
+        <mesh position=0, 4.52, -0.05]}>
+          <boxGeometry args=7.0, 0.26, 0.8]} />
+          <meshStandardMaterial color=#5e3a2e roughness=0.9} />
+        </mesh>
+        /* painted out-line near the top */}
+        <mesh position=0, 3.75, 0.24]}>
+          <boxGeometry args=6.4, 0.09, 0.03]} />
+          <meshStandardMaterial color=#ecc44a roughness=0.6} />
+        </mesh>
+        /* shared blacktop court in front */}
+                <mesh rotation-x=-Math.PI / 2} position=0, 0.004, 2.8]} receiveShadow>
+          <planeGeometry args=6.8, 5.4]} />
+          <meshStandardMaterial color=#787d85 roughness=0.96} />
+        </mesh>
+                /* painted boundary */}
+        
+          0, 0.25, 6.8, 0.09],
+          0, 5.45, 6.8, 0.09],
+                    -3.4, 2.85, 0.09, 5.3],
+          3.4, 2.85, 0.09, 5.3],
+].mapx, z, w, d], i) => 
+          <mesh key=i} rotation-x=-Math.PI / 2} position=x, 0.014, z]}>
+            <planeGeometry args=w, d]} />
+            <meshBasicMaterial color=#ecc44a transparent opacity=0.78} depthWrite=false} />
+          </mesh>
+))}
+        <CourtSign title=WALLBALL position=4.7, 0, 2.6]} color=#ff6b5e rotationY=-Math.PI / 2} />
+        <GroundLabel text=press E position=0, 0.02, 4.6]} color=#ffd6d0 />
       </group>
 
-      <Rig id="player" />
+            /* south-yard portals for the new recess games */}
+*/}
+      <group position=TAG_POS}>
+                              <mesh position=0, 0.16, 0]} receiveShadow>
+          <cylinderGeometry args=1.3, 1.45, 0.28, 32]} />
+                    <meshStandardMaterial color=#7dff9a emissive=#1e6c4b emissiveIntensity=0.35} roughness=0.72} />
+        </mesh>
+        <CourtSign title=TAG FIELD position=0, 0, -1.4]} color=#7dff9a />
+        <GroundLabel text=press E · 6 PLAYERS position=0, 0.03, 1.35]} color=#b7ffd1 />
+      </group>
+            <group position=KICKBALL_POS}>
+        <mesh position=0, 0.16, 0]} receiveShadow>
+          <cylinderGeometry args=1.3, 1.45, 0.28, 32]} />
+          <meshStandardMaterial color=#ffb347 emissive=#8a4b1d emissiveIntensity=0.35} roughness=0.72} />
+        </mesh>
+        <CourtSign title=KICKBALL position=0, 0, -1.4]} color=#ffb347 />
+        <GroundLabel text=press E · DIAMOND DASH position=0, 0.03, 1.35]} color=#ffe1ae />
+      </group>
+
+            <Rig id=player />
       <HubDirector />
     </>
-  );
+);
 }
