@@ -1,138 +1,167 @@
-import  useEffect, useRef } from react;
-import  useFrame, useThree } from @react-three/fileURLToPathBuffer;
-import * as THREE from three;
-import  useGame } from ../../game/store;
-import  sfx } from ../../game/audio;
-import  TAG, resetTag } from ./tagState;
-import  TAG_FIELD, TAG_IDS, clampTagPosition, moveTagPerson, nearestTagTarget, type TagId } from ../../game/tag;
+import { useEffect, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { useGame } from "../../game/store";
+import { sfx } from "../../game/audio";
+import { TAG, resetTag } from "./tagState";
+import { TAG_FIELD, TAG_IDS, clampTagPosition, moveTagPerson, nearestTagTarget } from "../../game/tag";
 
-const keys =  w: false, a: false, s: false, d: false, shift: false };
-const aim = new THREE.Vector3);
-const ray = new THREE.Raycaster);
-const ndc = new THREE.Vector2);
-const plane = new THREE.Planenew THREE.Vector30, 1, 0), 0);
+const keys = { w: false, a: false, s: false, d: false, shift: false };
+const aim = new THREE.Vector3();
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
-export function TagDirector) 
-  const  camera } = useThree);
-  const phase = useGames) => s.phase);
-  const prevPhase = useRefmenu);
-  const look = useRefnew THREE.Vector30, 0, 0));
-  const hitFlash = useRef0);
-    useEffect) => 
-    const down = e: KeyboardEvent) => 
-      if useGame.getState).phase !== play) return;
-      if e.code === KeyW || e.code === ArrowUp) keys.w = true;
-      if e.code === KeyA || e.code === ArrowLeft) keys.a = true;
-      if e.code === KeyS || e.code === ArrowDown) keys.s = true;
-            if e.code === KeyD || e.code === ArrowRight) keys.d = true;
-      if e.code === ShiftLeft || e.code === ShiftRight) keys.shift = true;
-};
-    const up = e: KeyboardEvent) => 
-      if e.code === KeyW || e.code === ArrowUp) keys.w = false;
-      if e.code === KeyA || e.code === ArrowLeft) keys.a = false;
-      if e.code ==KeyS || e.code === ArrowDown) keys.s = false;
-      if e.code === KeyD || e.code === ArrowRight) keys.d = false;
-            if e.code === ShiftLeft || e.code === ShiftRight) keys.shift = false;
-};
-    const mouse = e: MouseEvent) => 
-      ndc.sete.clientX / window.innerWidth) * 2 - 1, -e.clientY / window.innerHeight) * 2 + 1);
-  };
-    window.addEventListenerkeydown, down); window.addEventListenerkeyup, up); window.addEventListenermousemove, mouse);
-    return ) =>  window.removeEventListenerkeydown, down); window.removeEventListenerkeyup, up); window.removeEventListenermousemove, mouse); };
-}, ]);
+export function TagDirector() {
+  const { camera } = useThree();
+  const phase = useGame((state) => state.phase);
+  const previousPhase = useRef(phase);
+  const look = useRef(new THREE.Vector3(0, 0.5, 0));
+  const winTimer = useRef<number | null>(null);
 
-  useFrame_, rawDt) => 
-    const dt = Math.minrawDt, 0.04);
-    if phase !== play) 
-      if phase === menu || phase === hub) camera.lookAtlook.current);
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      if (useGame.getState().phase !== "play") return;
+      if (event.code === "KeyW" || event.code === "ArrowUp") keys.w = true;
+      if (event.code === "KeyA" || event.code === "ArrowLeft") keys.a = true;
+      if (event.code === "KeyS" || event.code === "ArrowDown") keys.s = true;
+      if (event.code === "KeyD" || event.code === "ArrowRight") keys.d = true;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") keys.shift = true;
+    };
+    const up = (event: KeyboardEvent) => {
+      if (event.code === "KeyW" || event.code === "ArrowUp") keys.w = false;
+      if (event.code === "KeyA" || event.code === "ArrowLeft") keys.a = false;
+      if (event.code === "KeyS" || event.code === "ArrowDown") keys.s = false;
+      if (event.code === "KeyD" || event.code === "ArrowRight") keys.d = false;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") keys.shift = false;
+    };
+    const mouse = (event: MouseEvent) => {
+      ndc.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("mousemove", mouse);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("mousemove", mouse);
+      keys.w = false; keys.a = false; keys.s = false; keys.d = false; keys.shift = false;
+      if (winTimer.current !== null) window.clearTimeout(winTimer.current);
+    };
+  }, []);
+
+  useFrame((_, rawDelta) => {
+    const dt = Math.min(rawDelta, 0.04);
+    if (phase !== "play") {
+      if (phase === "menu" || phase === "hub") camera.lookAt(look.current);
       return;
-}
-    if prevPhase.current !== play)  resetTag); TAG.current.phase = live; sfx.whistle); }
-    prevPhase.current = phase;
-    const t = TAG.current;
-    t.time += dt;
-    if t.time >= TAG_FIELD.roundSeconds && t.phase === live) 
-          t.phase = won;
-      useGame.getState).popupt.score > 0 ? FIELD TIME · $t.score} TAGS : FIELD TIME · RUN IT BACK, t.score > 0 ? gold : white, true);
-      setTimeout) =>  if useGame.getState).phase === play) useGame.getState).win); }, 1100);
+    }
+
+    if (previousPhase.current !== "play") {
+      resetTag();
+      TAG.current.phase = "live";
+      sfx.whistle();
+    }
+    previousPhase.current = phase;
+
+    const state = TAG.current;
+    state.time += dt;
+    if (state.time >= TAG_FIELD.roundSeconds && state.phase === "live") {
+      state.phase = "won";
+      useGame.getState().popup(state.score > 0 ? `FIELD TIME · ${state.score} TAGS` : "FIELD TIME · RUN IT BACK", state.score > 0 ? "gold" : "white", true);
+      winTimer.current = window.setTimeout(() => {
+        if (useGame.getState().phase === "play") useGame.getState().win();
+      }, 1100);
       return;
-}
-    t.tagCooldown = Math.max0, t.tagCooldown - dt);
-    for const id of TAG_IDS) t.peopleid].taggedFlash = Math.max0, t.peopleid].taggedFlash - dt);
-    const player = t.people.player;
-    const it = t.peoplet.currentIt];
+    }
 
-        ray.setFromCamerandc, camera);
-    const hit = ray.ray.intersectPlaneplane, aim);
-    if !hit) aim.setplayer.pos.x, 0, player.pos.z - 1);
+    state.tagCooldown = Math.max(0, state.tagCooldown - dt);
+    for (const id of TAG_IDS) state.people[id].taggedFlash = Math.max(0, state.people[id].taggedFlash - dt);
 
-        let mx = 0, mz = 0;
-    if keys.w) mz -= 1; if keys.s) mz += 1; if keys.a) mx -= 1; if keys.d) mx += 1;
-    const ml = Math.hypotmx, mz) || 1;
-    player.target.setplayer.pos.x + mx / ml) * keys.shift ? 2.8 : 1.8), 0, player.pos.z + mz / ml) * keys.shift ? 2.8 : 1.8));
-        if !mx && !mz) player.target.copyplayer.pos);
-    clampTagPositionplayer.target);
-    moveTagPersonplayer, dt, keys.shift && !!mx || mz));
-    player.facing = Math.atan2aim.x - player.pos.x, aim.z - player.pos.z);
+    const player = state.people.player;
+    const activeIt = state.people[state.currentIt];
+    ray.setFromCamera(ndc, camera);
+    if (!ray.ray.intersectPlane(plane, aim)) aim.set(player.pos.x, 0, player.pos.z - 1);
 
-    for const id of TAG_IDS) 
-      if id === player) continue;
-      const p = t.peopleid];
-      const target = nearestTagTargett, id, id === t.currentIt);
-      if !target) continue;
-      const dx = target.pos.x - p.pos.x;
-      const dz = target.pos.z - p.pos.z;
-      const d = Math.hypotdx, dz) || 1;
-      if id === t.currentIt) 
-        p.target.settarget.pos.x, 0, target.pos.z);
-} else 
-        const away = id.length % 2 ? 1 : -1;
-        p.target.setp.pos.x - dx / d * 2.4 + away * dz / d * 1.2, 0, p.pos.z - dz / d * 2.4 - away * dx / d * 1.2);
-        clampTagPositionp.target);
-}
-      moveTagPersonp, dt, id === t.currentIt);
-}
+    let moveX = 0;
+    let moveZ = 0;
+    if (keys.w) moveZ -= 1;
+    if (keys.s) moveZ += 1;
+    if (keys.a) moveX -= 1;
+    if (keys.d) moveX += 1;
+    const length = Math.hypot(moveX, moveZ) || 1;
+    const moving = moveX !== 0 || moveZ !== 0;
+    const sprinting = keys.shift && moving;
+    if (moving) {
+      const distance = sprinting ? 2.8 : 1.8;
+      player.target.set(player.pos.x + (moveX / length) * distance, 0, player.pos.z + (moveZ / length) * distance);
+      clampTagPosition(player.target);
+    } else {
+      player.target.copy(player.pos);
+    }
+    moveTagPerson(player, dt, sprinting);
+    player.facing = Math.atan2(aim.x - player.pos.x, aim.z - player.pos.z);
 
-    if t.tagCooldown <= 0) 
-      const chaser = t.peoplet.currentIt];
-      for const id of TAG_IDS) 
-        if id === t.currentIt) continue;
-        const victim = t.peopleid];
-        if chaser.pos.distanceTovictim.pos) < TAG_FIELD.tagRange) 
-          t.currentIt = id;
-          t.tagCooldown = 1.2;
-                    t.lastTagAt = t.time;
-          victim.taggedFlash = 0.8;
-          chaser.taggedFlash = 0.8;
-          if chaser.id === player) 
-            t.score += 1;
-                        useGame.getState).addScore1);
-            useGame.getState).popupTAGGED $victim.name} · +1, gold, true);
-            sfx.cheer);
-} else if victim.id === player) 
-            useGame.getState).popupYOURE IT · $chaser.name} GOT YOU, red, true);
-            sfx.fault);
-} else 
-            useGame.getState).popup$chaser.name} TAGGED $victim.name}, white);
-                        sfx.hit0.5);
-}
-          hitFlash.current = 0.4;
-          break;
-}
-}
-}
-    if t.score >= TAG_FIELD.goal) 
-      t.phase = won;
-            useGame.getState).rallyInc);
-      setTimeout) =>  if useGame.getState).phase === play) useGame.getState).win); }, 900);
-}
+    for (const id of TAG_IDS) {
+      if (id === "player") continue;
+      const person = state.people[id];
+      const target = nearestTagTarget(state, id, id === state.currentIt);
+      if (!target) continue;
+      const dx = target.pos.x - person.pos.x;
+      const dz = target.pos.z - person.pos.z;
+      const distance = Math.hypot(dx, dz) || 1;
+      if (id === state.currentIt) {
+        person.target.set(target.pos.x, 0, target.pos.z);
+      } else {
+        const side = id.length % 2 ? 1 : -1;
+        person.target.set(person.pos.x - (dx / distance) * 2.4 + side * (dz / distance) * 1.2, 0, person.pos.z - (dz / distance) * 2.4 - side * (dx / distance) * 1.2);
+        clampTagPosition(person.target);
+      }
+      moveTagPerson(person, dt, id === state.currentIt);
+    }
 
-    const centre = player.pos.clone).lerpit.pos, 0.22);
-    const cameraTarget = new THREE.Vector3player.pos.x, 7.1, player.pos.z + 9.2);
-    camera.position.lerpcameraTarget, 1 - Math.exp-dt * 3.6));
-    look.current.lerpcentre.setY0.5), 1 - Math.exp-dt * 5));
-        camera.lookAtlook.current);
-    hitFlash.current = Math.max0, hitFlash.current - dt);
-});
+    if (state.tagCooldown <= 0) {
+      const chaser = state.people[state.currentIt];
+      for (const id of TAG_IDS) {
+        if (id === state.currentIt) continue;
+        const victim = state.people[id];
+        if (chaser.pos.distanceTo(victim.pos) >= TAG_FIELD.tagRange) continue;
+        state.currentIt = id;
+        state.tagCooldown = 1.2;
+        state.lastTagAt = state.time;
+        victim.taggedFlash = 0.8;
+        chaser.taggedFlash = 0.8;
+        if (chaser.id === "player") {
+          state.score += 1;
+          useGame.getState().addScore(1);
+          useGame.getState().popup(`TAGGED ${victim.name} · +1`, "gold", true);
+          sfx.cheer();
+        } else if (victim.id === "player") {
+          useGame.getState().popup(`YOU'RE IT · ${chaser.name} GOT YOU`, "red", true);
+          sfx.fault();
+        } else {
+          useGame.getState().popup(`${chaser.name} TAGGED ${victim.name}`, "white");
+          sfx.hit(0.5);
+        }
+        break;
+      }
+    }
+
+    if (state.score >= TAG_FIELD.goal && state.phase === "live") {
+      state.phase = "won";
+      useGame.getState().rallyInc();
+      useGame.getState().popup("FIELD CHAMP · SEVEN TAGS", "gold", true);
+      winTimer.current = window.setTimeout(() => {
+        if (useGame.getState().phase === "play") useGame.getState().win();
+      }, 900);
+    }
+
+    const centre = player.pos.clone().lerp(activeIt.pos, 0.22);
+    const cameraTarget = new THREE.Vector3(player.pos.x * 0.2, 7.1, player.pos.z + 9.2);
+    camera.position.lerp(cameraTarget, 1 - Math.exp(-dt * 3.6));
+    look.current.lerp(centre.setY(0.5), 1 - Math.exp(-dt * 5));
+    camera.lookAt(look.current);
+  });
+
   return null;
 }

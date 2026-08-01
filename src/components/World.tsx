@@ -8,7 +8,8 @@ import {
   makeGrassTexture,
   makeSignTexture,
 } from "../game/textures";
-import { LINE_SPOT } from "../game/constants";
+import { swingAngle } from "./hub/constants";
+
 
 function SwayTree({ pos, s = 1, phase = 0 }: { pos: [number, number, number]; s?: number; phase?: number }) {
   const ref = useRef<THREE.Group>(null);
@@ -45,7 +46,9 @@ function SwingSet({ pos }: { pos: [number, number, number] }) {
   const s2 = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    if (s1.current) s1.current.rotation.x = Math.sin(t * 1.5) * 0.42;
+    // Seat 1 is the rideable one — it shares swingAngle() with the player
+    // so the kid and the plank move as one rigid body.
+    if (s1.current) s1.current.rotation.x = swingAngle(t);
     if (s2.current) s2.current.rotation.x = Math.sin(t * 1.5 + 1.4) * 0.3;
   });
   const frame = "#7a4b2e";
@@ -69,13 +72,22 @@ function SwingSet({ pos }: { pos: [number, number, number] }) {
       </mesh>
       {[[-0.7, s1], [0.7, s2]].map(([x, r], i) => (
         <group key={i} ref={r as any} position={[x as number, 2.5, 0]}>
-          <mesh position={[0, -0.75, 0]}>
-            <boxGeometry args={[0.025, 1.5, 0.025]} />
-            <meshStandardMaterial color="#8b8f96" metalness={0.6} roughness={0.4} />
-          </mesh>
+          {/* twin chains, so a rider fits between them */}
+          {[-0.19, 0.19].map((cx) => (
+            <mesh key={cx} position={[cx, -0.75, 0]}>
+              <boxGeometry args={[0.022, 1.5, 0.022]} />
+              <meshStandardMaterial color="#8b8f96" metalness={0.65} roughness={0.38} />
+            </mesh>
+          ))}
+          {/* seat plank */}
           <mesh castShadow position={[0, -1.52, 0]}>
-            <boxGeometry args={[0.42, 0.05, 0.2]} />
+            <boxGeometry args={[0.46, 0.06, 0.26]} />
             <meshStandardMaterial color="#20242b" roughness={0.7} />
+          </mesh>
+          {/* rubber lip on the front edge */}
+          <mesh position={[0, -1.52, 0.14]}>
+            <boxGeometry args={[0.46, 0.05, 0.03]} />
+            <meshStandardMaterial color="#33383f" roughness={0.8} />
           </mesh>
         </group>
       ))}
@@ -85,7 +97,7 @@ function SwingSet({ pos }: { pos: [number, number, number] }) {
 
 function Slide({ pos }: { pos: [number, number, number] }) {
   return (
-    <group position={pos} rotation-y={-0.6}>
+    <group position={pos} rotation-y={Math.PI * 0.72}>
       <mesh castShadow position={[0, 0.9, 0]}>
         <boxGeometry args={[0.9, 0.08, 0.9]} />
         <meshStandardMaterial color="#3f6fb5" roughness={0.6} />
@@ -293,60 +305,18 @@ export function World() {
 
       <SchoolBuilding />
 
-      {/* trees */}
-      <SwayTree pos={[10.8, 0, -9.5]} s={1.15} phase={1} />
-      <SwayTree pos={[-10.8, 0, -9.8]} s={1.3} phase={4} />
-      <SwayTree pos={[10.9, 0, 7.5]} s={1.0} phase={2.5} />
-      <SwayTree pos={[-10.6, 0, 8.2]} s={1.2} phase={0.4} />
-      <SwayTree pos={[6.5, 0, 12]} s={0.9} phase={3.1} />
-      <SwayTree pos={[-12.2, 0, -2]} s={1.05} phase={5.2} />
+      {/* ── Trees: hugged to the fence line, clear of every court ── */}
+      <SwayTree pos={[-12.0, 0, -7.2]} s={1.25} phase={4.0} />
+      <SwayTree pos={[12.0, 0, -7.2]}  s={1.15} phase={1.0} />
+      <SwayTree pos={[-12.2, 0, 11.4]} s={1.10} phase={0.4} />
+      <SwayTree pos={[12.2, 0, 11.4]}  s={1.20} phase={2.5} />
 
-      {/* playground */}
-      <SwingSet pos={[-9.6, 0, 9.6]} />
-      <Slide pos={[9.8, 0, 9.4]} />
+      {/* ── Playground equipment: far south corners ── */}
+      <SwingSet pos={[-8.8, 0, 12.0]} />
+      <Slide pos={[8.8, 0, 12.0]} />
 
-      {/* props: backpack pile */}
-      <group position={[-5.9, 0, -5.8]} rotation-y={0.7}>
-        <mesh castShadow position={[0, 0.22, 0]}>
-          <boxGeometry args={[0.42, 0.5, 0.26]} />
-          <meshStandardMaterial color="#e2483d" roughness={0.7} />
-        </mesh>
-        <mesh castShadow position={[0.4, 0.19, 0.15]} rotation-z={0.5}>
-          <boxGeometry args={[0.4, 0.46, 0.24]} />
-          <meshStandardMaterial color="#2f6fdb" roughness={0.7} />
-        </mesh>
-        <mesh castShadow position={[-0.3, 0.12, 0.25]} rotation-x={1.35}>
-          <boxGeometry args={[0.3, 0.2, 0.42]} />
-          <meshStandardMaterial color="#f7b32b" roughness={0.5} />
-        </mesh>
-      </group>
-      {/* cones */}
-      {[0, 1, 2].map((i) => (
-        <mesh key={i} castShadow position={[6.9 + i * 0.45, 0.19, -7.6]}>
-          <coneGeometry args={[0.17, 0.4, 10]} />
-          <meshStandardMaterial color="#ff7a2f" roughness={0.6} />
-        </mesh>
-      ))}
-      {/* kickball */}
-      <mesh castShadow position={[-7.6, 0.19, -7.4]}>
-        <sphereGeometry args={[0.19, 16, 16]} />
-        <meshStandardMaterial color="#d8342c" roughness={0.45} />
-      </mesh>
-      {/* chalk bucket */}
-      <group position={[-6.9, 0, -6.7]}>
-        <mesh castShadow position={[0, 0.16, 0]}>
-          <cylinderGeometry args={[0.14, 0.11, 0.32, 12]} />
-          <meshStandardMaterial color="#3f6fb5" roughness={0.6} />
-        </mesh>
-        {[-0.05, 0.03, 0.06].map((x, i) => (
-          <mesh key={i} position={[x, 0.38, i * 0.03 - 0.04]} rotation-z={0.3 + i * 0.3}>
-            <cylinderGeometry args={[0.018, 0.018, 0.16, 6]} />
-            <meshStandardMaterial color={["#ffffff", "#ffd9e8", "#cfeaff"][i]} roughness={0.8} />
-          </mesh>
-        ))}
-      </group>
-      {/* bench + lunchbox */}
-      <group position={[7.4, 0, -11.6]} rotation-y={Math.PI}>
+      {/* ── Bench + lunchbox: south-east, facing the courts ── */}
+      <group position={[4.2, 0, 11.9]} rotation-y={Math.PI}>
         <mesh castShadow position={[0, 0.42, 0]}>
           <boxGeometry args={[2.0, 0.08, 0.5]} />
           <meshStandardMaterial color="#7a4b2e" roughness={0.85} />
@@ -366,8 +336,51 @@ export function World() {
           <meshStandardMaterial color="#39b46a" roughness={0.4} metalness={0.3} />
         </mesh>
       </group>
-      {/* water fountain */}
-      <group position={[12.1, 0, -4.5]}>
+
+      {/* ── Backpack pile: dumped by the bench ── */}
+      <group position={[-4.4, 0, 11.9]} rotation-y={0.7}>
+        <mesh castShadow position={[0, 0.22, 0]}>
+          <boxGeometry args={[0.42, 0.5, 0.26]} />
+          <meshStandardMaterial color="#e2483d" roughness={0.7} />
+        </mesh>
+        <mesh castShadow position={[0.4, 0.19, 0.15]} rotation-z={0.5}>
+          <boxGeometry args={[0.4, 0.46, 0.24]} />
+          <meshStandardMaterial color="#2f6fdb" roughness={0.7} />
+        </mesh>
+        <mesh castShadow position={[-0.3, 0.12, 0.25]} rotation-x={1.35}>
+          <boxGeometry args={[0.3, 0.2, 0.42]} />
+          <meshStandardMaterial color="#f7b32b" roughness={0.5} />
+        </mesh>
+        {/* chalk bucket beside them */}
+        <group position={[-0.95, 0, -0.25]}>
+          <mesh castShadow position={[0, 0.16, 0]}>
+            <cylinderGeometry args={[0.14, 0.11, 0.32, 12]} />
+            <meshStandardMaterial color="#3f6fb5" roughness={0.6} />
+          </mesh>
+          {[-0.05, 0.03, 0.06].map((x, i) => (
+            <mesh key={i} position={[x, 0.38, i * 0.03 - 0.04]} rotation-z={0.3 + i * 0.3}>
+              <cylinderGeometry args={[0.018, 0.018, 0.16, 6]} />
+              <meshStandardMaterial color={["#ffffff", "#ffd9e8", "#cfeaff"][i]} roughness={0.8} />
+            </mesh>
+          ))}
+        </group>
+      </group>
+
+      {/* ── Cones stacked out of the way, west fence ── */}
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} castShadow position={[-12.0, 0.19, 1.2 + i * 0.5]}>
+          <coneGeometry args={[0.17, 0.4, 10]} />
+          <meshStandardMaterial color="#ff7a2f" roughness={0.6} />
+        </mesh>
+      ))}
+      {/* spare kickball */}
+      <mesh castShadow position={[-11.9, 0.19, 3.1]}>
+        <sphereGeometry args={[0.19, 16, 16]} />
+        <meshStandardMaterial color="#d8342c" roughness={0.45} />
+      </mesh>
+
+      {/* ── Water fountain: east fence, between the courts ── */}
+      <group position={[12.2, 0, 0.5]}>
         <mesh castShadow position={[0, 0.45, 0]}>
           <cylinderGeometry args={[0.22, 0.26, 0.9, 12]} />
           <meshStandardMaterial color="#8d959e" metalness={0.5} roughness={0.4} />
@@ -376,21 +389,6 @@ export function World() {
           <cylinderGeometry args={[0.26, 0.26, 0.08, 12]} />
           <meshStandardMaterial color="#b9c2ca" metalness={0.6} roughness={0.3} />
         </mesh>
-      </group>
-
-      {/* chalk LINE box */}
-      <group position={[LINE_SPOT[0], 0.012, LINE_SPOT[1]]}>
-        {[
-          [0, -0.8, 1.7, 0.06],
-          [0, 0.8, 1.7, 0.06],
-          [-0.8, 0, 0.06, 1.7],
-          [0.8, 0, 0.06, 1.7],
-        ].map(([x, z, w, d], i) => (
-          <mesh key={i} rotation-x={-Math.PI / 2} position={[x, 0, z]}>
-            <planeGeometry args={[w, d]} />
-            <meshBasicMaterial color="#efe9da" transparent opacity={0.55} depthWrite={false} />
-          </mesh>
-        ))}
       </group>
 
       <Leaves />

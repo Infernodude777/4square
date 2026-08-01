@@ -5,10 +5,16 @@ import { useGame } from "../../game/store";
 import { RT } from "../../game/refs";
 import { beginServe } from "../../game/tetherball";
 import { resetTether, TS } from "../tether/tetherState";
-import { FOUR_SQUARE_POS, TETHER_POS } from "./constants";
+import { sfx } from "../../game/audio";
+import {
+  FOUR_SQUARE_POS, TETHER_POS, WALL_POS, TAG_POS, KICKBALL_POS, SPAWN,
+  SWING_POS, SWING_FACING, SWING_DISMOUNT, swingSeat,
+} from "./constants";
+import { resolveCollisions } from "./colliders";
 
 const keys = { w: false, a: false, s: false, d: false };
 const look = new THREE.Vector3(0, 1, 0);
+let swinging = false;
 
 function dist2D(a: THREE.Vector3, b: [number, number, number]) {
   return Math.hypot(a.x - b[0], a.z - b[2]);
@@ -23,11 +29,14 @@ export function HubDirector() {
     resetTether();
     beginServe(TS.current, "player");
     const p = RT.entities.player;
-    p.pos.set(0, 0, 9.2);
+    swinging = false;
+    p.pos.set(SPAWN[0], 0, SPAWN[2]);
     p.target.copy(p.pos);
     p.y = 0;
     p.vy = 0;
     p.crouch = false;
+    p.sitting = false;
+    p.lean = 0;
     p.facing = Math.PI;
 
     const down = (e: KeyboardEvent) => {
@@ -38,8 +47,35 @@ export function HubDirector() {
       if (e.code === "KeyD" || e.code === "ArrowRight") keys.d = true;
       if (e.code === "KeyE") {
         const player = RT.entities.player.pos;
-        if (dist2D(player, FOUR_SQUARE_POS) < 4.8) start("foursquare");
-        else if (dist2D(player, TETHER_POS) < 3.9) start("tetherball");
+        if (swinging) {
+          // Hop off onto the clear patch in front of the frame.
+          swinging = false;
+          const pl = RT.entities.player;
+          pl.pos.set(SWING_DISMOUNT.x, 0, SWING_DISMOUNT.z);
+          pl.y = 0;
+          pl.vy = 0;
+          pl.sitting = false;
+          pl.lean = 0;
+          pl.facing = SWING_FACING;
+          sfx.ui();
+          return;
+        }
+
+        const d4 = dist2D(player, FOUR_SQUARE_POS);
+        const dt = dist2D(player, TETHER_POS);
+        const dw = dist2D(player, WALL_POS);
+        const dtag = dist2D(player, TAG_POS);
+        const dkick = dist2D(player, KICKBALL_POS);
+        const ds = dist2D(player, SWING_POS);
+
+        if (ds < 2.0 && ds <= d4 && ds <= dt && ds <= dw) {
+          swinging = true;
+          sfx.ui();
+        } else if (dtag < 3.0 && dtag <= dkick && dtag <= d4 && dtag <= dt && dtag <= dw) start("tag");
+        else if (dkick < 3.0 && dkick <= dtag && dkick <= d4 && dkick <= dt && dkick <= dw) start("kickball");
+        else if (d4 < 5.2 && d4 <= dt && d4 <= dw) start("foursquare");
+        else if (dt < 4.4 && dt <= dw) start("tetherball");
+        else if (dw < 5.6) start("wallball");
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -56,34 +92,70 @@ export function HubDirector() {
     };
   }, [start]);
 
-  useFrame((_, dtRaw) => {
+  useFrame(({ clock }, dtRaw) => {
     if (phase !== "hub") return;
     const dt = Math.min(dtRaw, 0.04);
     const p = RT.entities.player;
-    let x = 0;
-    let z = 0;
-    if (keys.w) z -= 1;
-    if (keys.s) z += 1;
-    if (keys.a) x -= 1;
-    if (keys.d) x += 1;
-    const len = Math.hypot(x, z) || 1;
-    x /= len;
-    z /= len;
-    const moving = Math.abs(x) + Math.abs(z) > 0.01;
-    if (moving) {
-      p.pos.x += x * 3.9 * dt;
-      p.pos.z += z * 3.9 * dt;
-      p.facing = Math.atan2(x, z);
-      p.walkPhase += dt * 10;
-    }
-    p.pos.x = Math.max(-12.5, Math.min(12.5, p.pos.x));
-    p.pos.z = Math.max(-12.5, Math.min(12.5, p.pos.z));
-    p.moving = moving;
-    p.swing += dt;
-    p.crouch = false;
 
-    const targetCam = new THREE.Vector3(p.pos.x, 6.2, p.pos.z + 7.6);
-    const targetLook = new THREE.Vector3(p.pos.x, 0.9, p.pos.z - 1.4);
+    if (swinging) {
+      // ── Riding the swing ──
+      // swingSeat() returns the exact world transform of the same plank the
+      // model is drawing, so the kid is welded to the seat.
+      const seat = swingSeat(clock.elapsedTime);
+
+      p.pos.x = seat.x;
+      p.pos.z = seat.z;
+      // Drop the root so the hips rest on top of the plank instead of the
+      // feet standing on it.
+      p.y = seat.y - 0.40;
+      // Sit upright facing up the yard toward the school…
+      p.facing = SWING_FACING;
+      // …and tilt with the chains. The body hangs from the pivot, so when the
+      // seat is forward the torso is angled back.
+      p.lean = -seat.angle;
+      p.sitting = true;
+      p.crouch = false;
+      p.moving = false;
+      p.walkPhase = 0;
+      p.swing += dt;
+    } else {
+      // ── Standard walking movement ──
+      let x = 0;
+      let z = 0;
+      if (keys.w) z -= 1;
+      if (keys.s) z += 1;
+      if (keys.a) x -= 1;
+      if (keys.d) x += 1;
+      const len = Math.hypot(x, z) || 1;
+      x /= len;
+      z /= len;
+      const moving = Math.abs(x) + Math.abs(z) > 0.01;
+      if (moving) {
+        const speed = 4.4;
+        const stepX = x * speed * dt;
+        const stepZ = z * speed * dt;
+        let r = resolveCollisions(p.pos.x + stepX, p.pos.z);
+        p.pos.x = r.x;
+        r = resolveCollisions(p.pos.x, p.pos.z + stepZ);
+        p.pos.z = r.z;
+        p.facing = Math.atan2(x, z);
+        p.walkPhase += dt * 10;
+      }
+      p.moving = moving;
+      p.swing += dt;
+      p.crouch = false;
+      p.sitting = false;
+      p.lean = 0;
+      p.y = 0;
+    }
+
+    // Pull in a little and rise with the rider while they're on the swing.
+    const targetCam = swinging
+      ? new THREE.Vector3(p.pos.x * 0.85 + 1.6, 5.6 + p.y * 0.5, p.pos.z + 6.4)
+      : new THREE.Vector3(p.pos.x * 0.85, 7.4, p.pos.z + 9.0);
+    const targetLook = swinging
+      ? new THREE.Vector3(p.pos.x, p.y + 0.9, p.pos.z - 1.6)
+      : new THREE.Vector3(p.pos.x * 0.9, 0.9, p.pos.z - 2.2);
     const k = 1 - Math.exp(-dt * 4.0);
     camera.position.lerp(targetCam, k);
     look.lerp(targetLook, 1 - Math.exp(-dt * 5.5));

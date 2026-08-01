@@ -409,10 +409,11 @@ export function humanHit(kind: "power" | "soft") {
   p.hitCooldown = 0.35;
 
   const hdist = Math.hypot(ball.pos.x - p.pos.x, ball.pos.z - p.pos.z);
+  const HIT_RANGE = 1.50;   // matches the under-ring radius so visual = detection
   const canServe = !!leg && leg.isServe && leg.serveBounced && leg.hitter === "player" && !leg.done;
   const canReturn =
     !!leg && !leg.done && !leg.isServe && leg.firstBounced && leg.receiver === "player";
-  const inReach = hdist < 1.95 && ball.pos.y > 0.04 && ball.pos.y < p.y + (p.crouch ? 1.35 : 2.25);
+  const inReach = hdist < HIT_RANGE && ball.pos.y > 0.04 && ball.pos.y < p.y + (p.crouch ? 1.35 : 2.25);
 
   if ((!canServe && !canReturn) || !inReach || !ball.active) {
     // whiff
