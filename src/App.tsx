@@ -10,8 +10,6 @@ import { WallballScene } from "./components/wallball/WallballScene";
 import { WallballHUD } from "./components/wallball/WallballHUD";
 import { TagScene } from "./components/tag/TagScene";
 import { TagHUD } from "./components/tag/TagHUD";
-import { KickScene } from "./components/kickball/KickScene";
-import { KickHUD } from "./components/kickball/KickHUD";
 import { Victory } from "./components/Screens";
 import { useGame } from "./game/store";
 
@@ -19,21 +17,18 @@ export default function App() {
   const phase = useGame((s) => s.phase);
   const mode = useGame((s) => s.mode);
   const playing = phase === "play" || phase === "point";
-  const isHub = phase === "hub";
+  const isHub    = phase === "hub";
   const isTether = mode === "tetherball";
-  const isWall = mode === "wallball";
-  const isTag = mode === "tag";
-  const isKickball = mode === "kickball";
+  const isWall   = mode === "wallball";
+  const isTag    = mode === "tag";
 
   const camPos: [number, number, number] = isTether
     ? [1, 7, 5.5]
     : isWall
       ? [0, 5.2, 6.0]
       : isTag
-        ? [0, 7.1, 9.2]
-        : isKickball
-          ? [0, 7.2, 10.2]
-          : [-10.5, 5.4, -10.5];
+        ? [0, 14, 12]
+        : [-10.5, 5.4, -10.5];
 
   return (
     <div
@@ -51,10 +46,10 @@ export default function App() {
           gl.toneMappingExposure = 1.08;
         }}
       >
-        {isHub ? <HubScene /> : isTether ? <TetherScene /> : isWall ? <WallballScene /> : isTag ? <TagScene /> : isKickball ? <KickScene /> : <Scene />}
+        {isHub ? <HubScene /> : isTether ? <TetherScene /> : isWall ? <WallballScene /> : isTag ? <TagScene /> : <Scene />}
       </Canvas>
       {isHub && <HubHUD />}
-      {playing && (isTether ? <TetherHUD /> : isWall ? <WallballHUD /> : isTag ? <TagHUD /> : isKickball ? <KickHUD /> : <HUD />)}
+      {playing && (isTether ? <TetherHUD /> : isWall ? <WallballHUD /> : isTag ? <TagHUD /> : <HUD />)}
       {phase === "win" && <Victory />}
     </div>
   );
