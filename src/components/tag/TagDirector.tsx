@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { skillFactor, botReactionFactor } from "../../game/settings";
 import {
   TAG_YARD_HALF, TAG_REACH, IT_IMMUNITY,
   FREEZE_UNFREEZE_R, SPRINT_MUL, BOTS, BOT_IDS,
@@ -38,7 +39,7 @@ export function resetTag() {
   TS = createTagState();
   BOT_IDS.forEach(id => {
     botAI[id].wander = randomWander();
-    botAI[id].reactCd = BOTS[id].react;
+    botAI[id].reactCd = BOTS[id].react * botReactionFactor();
   });
 }
 
@@ -140,7 +141,7 @@ export function TagDirector() {
       const ai  = botAI[id];
       ai.reactCd -= dt;
       if (ai.reactCd > 0) return;
-      ai.reactCd = def.react + Math.random() * def.react * 0.5;
+      ai.reactCd = (def.react + Math.random() * def.react * 0.5) * botReactionFactor();
       updateBotTarget(t, bot, def, ai);
     });
 
@@ -168,7 +169,7 @@ export function TagDirector() {
       const dz = ai.wander.z - bot.pos.z;
       const d  = Math.hypot(dx, dz);
       if (d > 0.1) {
-        const spd = (bot.isIt && t.mode !== "blob") ? def.speed * 1.08 : def.speed;
+        const spd = ((bot.isIt && t.mode !== "blob") ? def.speed * 1.08 : def.speed) * skillFactor();
         const step = Math.min(d, spd * dt);
         bot.pos.x = cl(bot.pos.x + (dx / d) * step, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
         bot.pos.z = cl(bot.pos.z + (dz / d) * step, -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
