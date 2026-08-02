@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { INITIAL_ASSIGN, INITIAL_LINE, sqOf, type EntityId } from "./constants";
 import { sfx, setMuted } from "./audio";
+import { useSettings } from "./settings";
+import { checkBadges } from "./achievements";
 
 export type Phase = "hub" | "menu" | "play" | "point" | "win";
-export type Mode = "foursquare" | "tetherball" | "wallball" | "tag";
+export type Mode = "foursquare" | "tetherball" | "wallball" | "tag" | "kickball";
 
 export interface Popup {
   id: number;
@@ -30,14 +32,21 @@ interface GameState {
   /** final wallball match tally for the victory screen */
   wallYou: number;
   wallBot: number;
+  /** final kickball tally for the victory screen */
+  kickYou: number;
+  kickBot: number;
+  /** true while the pause menu is open */
+  paused: boolean;
   assign: Record<number, EntityId>;
   line: EntityId;
   muted: boolean;
   popups: Popup[];
   start: (mode?: Mode) => void;
   toMenu: () => void;
+  setPaused: (p: boolean) => void;
   setWraps: (n: number) => void;
   setWallResult: (you: number, bot: number) => void;
+  setKickResult: (you: number, bot: number) => void;
   addFoul: (who: "player" | "op") => void;
   addScore: (n: number) => void;
   popup: (text: string, tone?: Popup["tone"], big?: boolean) => void;
@@ -59,6 +68,9 @@ export const useGame = create<GameState>((set, get) => ({
   opFouls: 0,
   wallYou: 0,
   wallBot: 0,
+  kickYou: 0,
+  kickBot: 0,
+  paused: false,
   score: 0,
   streak: 0,
   bestStreak: 0,
@@ -74,9 +86,13 @@ export const useGame = create<GameState>((set, get) => ({
   start: (mode) => {
     sfx.unlock();
     sfx.ui();
+    const next = mode ?? get().mode;
+    const s = useSettings.getState();
+    s.patchStats({ gamesPlayed: s.stats.gamesPlayed + 1 });
+    checkBadges({ kind: "gameStart", mode: next });
     set({
       phase: "play",
-      mode: mode ?? get().mode,
+      mode: next,
       score: 0,
       streak: 0,
       bestStreak: 0,
@@ -89,6 +105,9 @@ export const useGame = create<GameState>((set, get) => ({
       opFouls: 0,
       wallYou: 0,
       wallBot: 0,
+      kickYou: 0,
+      kickBot: 0,
+      paused: false,
       assign: { ...INITIAL_ASSIGN },
       line: INITIAL_LINE,
       popups: [],
@@ -96,11 +115,13 @@ export const useGame = create<GameState>((set, get) => ({
   },
   setWraps: (n) => set({ wraps: n }),
   setWallResult: (you, bot) => set({ wallYou: you, wallBot: bot }),
+  setKickResult: (you, bot) => set({ kickYou: you, kickBot: bot }),
+  setPaused: (p) => set({ paused: p }),
   addFoul: (who) =>
     set((s) => (who === "player" ? { fouls: s.fouls + 1 } : { opFouls: s.opFouls + 1 })),
   toMenu: () => {
     sfx.ui();
-    set({ phase: "hub" });
+    set({ phase: "hub", paused: false });
   },
   addScore: (n) =>
     set((s) => {
@@ -123,6 +144,21 @@ export const useGame = create<GameState>((set, get) => ({
   registerHit: (perfect) =>
     set((s) => {
       const streak = perfect ? s.streak + 1 : 0;
+      const stats = useSettings.getState().stats;
+      useSettings
+        .getState()
+        .patchStats({
+          totalHits: stats.totalHits + 1,
+          totalPerfects: stats.totalPerfects + (perfect ? 1 : 0),
+        });
+      checkBadges({
+        kind: "stats",
+        perfects: s.perfects + (perfect ? 1 : 0),
+        kos: s.kos,
+        rallies: s.rallies,
+        bestStreak: Math.max(s.bestStreak, streak),
+        timePlayed: useSettings.getState().stats.timePlayed,
+      });
       return {
         hits: s.hits + 1,
         perfects: s.perfects + (perfect ? 1 : 0),
@@ -130,9 +166,28 @@ export const useGame = create<GameState>((set, get) => ({
         bestStreak: Math.max(s.bestStreak, streak),
       };
     }),
-  registerKO: () => set((s) => ({ kos: s.kos + 1 })),
+  registerKO: () => {
+    const stats = useSettings.getState().stats;
+    useSettings.getState().patchStats({ totalKOs: stats.totalKOs + 1 });
+    checkBadges({
+      kind: "stats",
+      perfects: get().perfects,
+      kos: get().kos + 1,
+      rallies: get().rallies,
+      bestStreak: get().bestStreak,
+      timePlayed: useSettings.getState().stats.timePlayed,
+    });
+    set((s) => ({ kos: s.kos + 1 }));
+  },
   setPhase: (p) => set({ phase: p }),
-  rallyInc: () => set((s) => ({ rallies: s.rallies + 1 })),
+  rallyInc: () =>
+    set((s) => {
+      const stats = useSettings.getState().stats;
+      useSettings
+        .getState()
+        .patchStats({ totalRallies: stats.totalRallies + 1 });
+      return { rallies: s.rallies + 1 };
+    }),
   toggleMute: () => {
     const m = !get().muted;
     setMuted(m);
@@ -140,6 +195,14 @@ export const useGame = create<GameState>((set, get) => ({
   },
   win: () => {
     sfx.win();
+    const st = get();
+    const mode = st.mode;
+    const score = st.score;
+    // record high score for the mode + lifetime win
+    const settings = useSettings.getState();
+    settings.recordScore(mode, score);
+    settings.patchStats({ totalWins: settings.stats.totalWins + 1 });
+    checkBadges({ kind: "modeWin", mode });
     set({ phase: "win" });
   },
 }));
