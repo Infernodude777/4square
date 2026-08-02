@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { BOTS, TARGET_SCORE, type EntityId } from "../game/constants";
 import { useGame, type Mode } from "../game/store";
 import { WIN_WRAPS } from "../game/tetherball";
+import { useSettings } from "../game/settings";
+import { BadgesWall } from "./BadgesWall";
 
 const BOT_IDS = Object.keys(BOTS) as Exclude<EntityId, "player">[];
 
@@ -71,112 +73,156 @@ function ModeCard({
   );
 }
 
+const MODE_COPY: Record<Mode, { title: string; sub: string; emoji: string; tint: string; desc: string; head: string; rules: string[] }> = {
+  foursquare: {
+    title: "FOUR SQUARE",
+    sub: "RECESS ROYALE · 4 BOTS",
+    emoji: "🟨🟥🟩🟦",
+    tint: "#ffd23e",
+    desc: "Classic playground four-square. Rotate up through the ranks, dethrone the King, race to 30.",
+    head: "FOUR\nSQUARE",
+    rules: [
+      "Ball bounces once per square",
+      "Fault = back of the line",
+      "Rotate up on every miss",
+      `First to ${TARGET_SCORE} rules the yard`,
+    ],
+  },
+  tetherball: {
+    title: "TETHERBALL",
+    sub: "POLE DUEL · 1V1",
+    emoji: "🎯",
+    tint: "#ff8a3c",
+    desc: "One-on-one against REX. Wind the rope your way, dodge fouls, land the winning wrap above the yellow mark.",
+    head: "TETHER\nBALL",
+    rules: [
+      "You wind counter-clockwise",
+      "Bot winds the other way",
+      "Final wrap above the height mark",
+      `${WIN_WRAPS} wraps = victory 👑`,
+    ],
+  },
+  kickball: {
+    title: "KICKBALL",
+    sub: "RECESS STAPLE · 3 INNINGS",
+    emoji: "🦵",
+    tint: "#7fc4ff",
+    desc: "You against the yard. Time the pitch, kick it past the bots, and run like the bell is about to ring.",
+    head: "KICK\nBALL",
+    rules: [
+      "Click when the ball hits the plate",
+      "Right-click to bunt",
+      "Beat the throw to the base",
+      "3 innings · most runs wins",
+    ],
+  },
+  wallball: {
+    title: "WALLBALL",
+    sub: "WALL MASTER · 1V1",
+    emoji: "🧱",
+    tint: "#ff6b5e",
+    desc: "Beat ZIGGY at his own game — bounce, slam, repeat. First to 11 owns the bricks.",
+    head: "WALL\nBALL",
+    rules: [
+      "Bounce before the wall",
+      "One bounce back before you hit",
+      "First to 11 wins",
+    ],
+  },
+  tag: {
+    title: "TAG!",
+    sub: "THREE VARIETIES",
+    emoji: "🏃",
+    tint: "#e2483d",
+    desc: "Regular, freeze, or blob tag across the whole blacktop. Don't be IT — or be the best at it.",
+    head: "TAG!",
+    rules: [
+      "Avoid being IT",
+      "Freeze tag: unfreeze teammates",
+      "Blob tag: last one free wins",
+    ],
+  },
+};
+
 export function Menu() {
   const start = useGame((s) => s.start);
   const [mode, setMode] = useState<Mode>("foursquare");
+  const highScores = useSettings((s) => s.highScores);
 
+  const copy = MODE_COPY[mode];
   const isFS = mode === "foursquare";
+
   return (
     <div className="chalkboard absolute inset-0 z-20 flex items-center justify-center overflow-y-auto p-6 font-body">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-stretch gap-6 lg:flex-row">
         {/* ── left: title + description ─────────────────── */}
         <div className="flex flex-1 flex-col justify-center">
           <div className="font-display text-lg tracking-[0.3em] text-[#8fd8cf]">THE SCHOOLYARD GAUNTLET</div>
-          {isFS ? (
-            <>
-              <h1
-                className="font-display text-7xl leading-[0.95] text-[#ffd23e] md:text-8xl"
-                style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
-              >
-                FOUR
-                <br />
-                SQUARE
-              </h1>
-              <div className="mt-1 font-display text-2xl tracking-widest text-[#ff8a7a]">RECESS ROYALE</div>
-            </>
-          ) : (
-            <>
-              <h1
-                className="font-display text-7xl leading-[0.95] text-[#ffd23e] md:text-8xl"
-                style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
-              >
-                TETHER
-                <br />
-                BALL
-              </h1>
-              <div className="mt-1 font-display text-2xl tracking-widest text-[#ff8a7a]">POLE DUEL · 1v1</div>
-            </>
-          )}
+          <h1
+            className="font-display text-6xl leading-[0.95] text-[#ffd23e] md:text-7xl"
+            style={{ textShadow: "0 4px 0 #c23227, 0 9px 0 rgba(0,0,0,0.35)" }}
+          >
+            {copy.head.split("\n").map((l) => (
+              <span key={l} className="block">{l}</span>
+            ))}
+          </h1>
+          <div className="mt-1 font-display text-2xl tracking-widest text-[#ff8a7a]">{copy.sub}</div>
           <div className="mt-3">
             <ChalkSquiggle />
           </div>
-          <p className="mt-3 max-w-md text-sm font-bold leading-relaxed text-white/75">
-            {isFS ? (
-              <>
-                Four chrome-plated classmate-bots hold the blacktop. Time your swings off the bounce, skimmer low,
-                smash from the sky, and climb from Square 1 to the crown.
-              </>
-            ) : (
-              <>
-                Just you, REX, and a pole. Ten feet tall, rope on top, ball on the end. Wind it {WIN_WRAPS} full
-                turns your way to win. Crouch to skim it low, jump and strike on the way <em className="not-italic text-[#ff8a7a]">down</em> to
-                smash, or nail the razor-thin timing on a HIGH LOFT to sail it clean over REX's head.
-              </>
-            )}
-          </p>
+          <p className="mt-3 max-w-md text-sm font-bold leading-relaxed text-white/75">{copy.desc}</p>
 
           <div className="mt-5 grid max-w-md grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] font-bold text-white/70 sm:grid-cols-2">
-            {isFS ? (
-              <>
-                <div><span className="text-[#ffd23e]">◈</span> Ball bounces once per square</div>
-                <div><span className="text-[#ffd23e]">◈</span> Fault = back of the line</div>
-                <div><span className="text-[#ffd23e]">◈</span> Rotate up on every miss</div>
-                <div><span className="text-[#ffd23e]">◈</span> First to {TARGET_SCORE} rules the yard</div>
-              </>
-            ) : (
-              <>
-                <div><span className="text-[#ffd23e]">◈</span> You wind counter-clockwise</div>
-                <div><span className="text-[#ffd23e]">◈</span> Bot winds the other way</div>
-                <div><span className="text-[#ffd23e]">◈</span> Final wrap above the height mark</div>
-                <div><span className="text-[#ffd23e]">◈</span> {WIN_WRAPS} wraps = victory 👑</div>
-              </>
-            )}
+            {copy.rules.map((r) => (
+              <div key={r}><span className="text-[#ffd23e]">◈</span> {r}</div>
+            ))}
           </div>
 
           <button
             onClick={() => start(mode)}
             className="group mt-7 w-fit rounded-2xl border-b-[6px] border-[#8f6a00] bg-[#ffd23e] px-10 py-4 font-display text-3xl tracking-wide text-[#3a2a00] transition-all hover:-translate-y-0.5 hover:bg-[#ffe066] active:translate-y-0.5 active:border-b-2"
           >
-            {isFS ? "CLAIM SQUARE 1 ▸" : "STEP TO THE POLE ▸"}
+            {mode === "foursquare" ? "CLAIM SQUARE 1 ▸" : mode === "tetherball" ? "STEP TO THE POLE ▸" : mode === "kickball" ? "STEP TO THE PLATE ▸" : mode === "wallball" ? "FACE THE WALL ▸" : "RUN, DON'T WALK ▸"}
           </button>
           <div className="mt-2 text-[11px] font-bold tracking-widest text-white/40">
-            SOUND ON RECOMMENDED 🔔 · WASD MOVE · SPACE JUMP · C CROUCH · CLICK HIT
+            SOUND ON RECOMMENDED 🔔 · WASD MOVE · SPACE JUMP · C CROUCH · CLICK HIT · ESC PAUSE
           </div>
         </div>
 
-        {/* ── right: mode picker + roster ──────────────────── */}
+        {/* ── right: mode picker + extras ──────────────────── */}
         <div className="flex w-full max-w-sm flex-col gap-3 lg:w-96">
           <div className="mb-1 font-display text-sm tracking-[0.25em] text-white/80">CHOOSE YOUR GAME</div>
-          <ModeCard
-            mode="foursquare"
-            active={isFS}
-            onPick={setMode}
-            title="FOUR SQUARE"
-            subtitle="RECESS ROYALE · 4 BOTS"
-            emoji="🟨🟥🟩🟦"
-            tint="#ffd23e"
-            desc="Classic playground four-square. Rotate up through the ranks, dethrone the King, race to 30."
-          />
-          <ModeCard
-            mode="tetherball"
-            active={!isFS}
-            onPick={setMode}
-            title="TETHERBALL"
-            subtitle="POLE DUEL · 1V1"
-            emoji="🎯"
-            tint="#ff8a3c"
-            desc="One-on-one against REX. Wind the rope your way, dodge fouls, land the winning wrap above the yellow mark."
-          />
+          {(Object.keys(MODE_COPY) as Mode[]).map((m) => {
+            const c = MODE_COPY[m];
+            return (
+              <ModeCard
+                key={m}
+                mode={m}
+                active={mode === m}
+                onPick={setMode}
+                title={c.title}
+                subtitle={c.sub}
+                emoji={c.emoji}
+                tint={c.tint}
+                desc={c.desc}
+              />
+            );
+          })}
+
+          {/* High scores */}
+          <div className="rounded-2xl border-2 border-dashed border-white/20 bg-black/25 p-4">
+            <div className="mb-2 font-display text-sm tracking-[0.25em] text-white/80">HALL OF RECORDS</div>
+            <div className="grid grid-cols-1 gap-1 text-[11px] font-bold">
+              {(Object.keys(MODE_COPY) as Mode[]).map((m) => (
+                <div key={m} className="flex justify-between">
+                  <span className="text-white/50">{MODE_COPY[m].title}</span>
+                  <span className="text-[#ffd23e] tabular-nums">{highScores[m] ?? 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <BadgesWall />
 
           {isFS && (
             <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4">
@@ -210,44 +256,6 @@ export function Menu() {
               })}
             </div>
           )}
-          {!isFS && (
-            <div className="rounded-2xl border-2 border-dashed border-white/25 bg-black/25 p-4">
-              <div className="mb-2 font-display text-sm tracking-[0.25em] text-white/80">TONIGHT'S CHALLENGER</div>
-              <div className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2">
-                <div className="flex h-11 w-11 items-center justify-center rounded-md font-display text-xs text-white bg-[#e2483d]">
-                  REX
-                </div>
-                <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-extrabold text-white/90">REX</div>
-              <div className="truncate text-[10px] font-bold text-white/50">Pole King · has never lost the crown</div>
-                </div>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4].map((i) => (
-                    <span key={i} className="text-[9px] text-[#ffd23e]">
-                      ★
-                    </span>
-                  ))}
-                  <span className="text-[9px] text-white/20">★</span>
-                </div>
-              </div>
-              <div className="mt-3 border-t border-white/10 pt-3 text-[11px] font-bold text-white/60">
-                <div className="mb-1 font-display text-[10px] tracking-widest text-white/80">HOW YOU HIT</div>
-                <div className="grid grid-cols-[92px_1fr] gap-y-1">
-                  <span className="text-[#f4c542]">CLICK</span> <span>DRIVE — the classic punch</span>
-                  <span className="text-[#38d6d0]">C + CLICK</span> <span>SKIMMER — low, fast, mean</span>
-                  <span className="text-[#ff5a3c]">SPACE ↓ CLICK</span>{" "}
-                  <span>
-                    SMASH — jump, then strike <em className="text-[#ff8a7a] not-italic">falling</em>
-                  </span>
-                  <span className="text-[#b58cff]">RIGHT CLICK</span>{" "}
-                  <span>
-                    HIGH LOFT — <em className="text-[#c9a8ff] not-italic">tight timing</em>, sails overhead
-                  </span>
-                  <span className="text-[#8ae06b]">C + RIGHT</span> <span>DINK — soft touch, kills pace</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -256,10 +264,7 @@ export function Menu() {
 
 export function Victory() {
   const st = useGame();
-
-  // No generic confetti. Instead: shaky "TAPE TOP" handwritten note aesthetic.
-  // A single white chalk circle drawn on dark background feels like recess
-  // art pinned to the school's faded blue corkboard.
+  const settings = useSettings();
 
   const confetti = useMemo(
     () =>
@@ -275,9 +280,10 @@ export function Victory() {
     [],
   );
 
+  const kickWon = st.mode === "kickball" && st.kickYou > st.kickBot;
+
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#102530]/90 font-body backdrop-blur-[4px]">
-      {/* subtle chalk dust particles — soft, drawing-like, not confetti */}
       {confetti.map((c, i) => (
         <span
           key={i}
@@ -294,84 +300,57 @@ export function Victory() {
         />
       ))}
 
-      {/* Central "recess slip" + tape pieces */}
       <div
         className="relative mx-4 w-full max-w-md animate-cardin overflow-hidden rounded-xl
                    border-[3px] border-[#f5edc8] bg-[#fdfaf2] px-7 py-8 shadow-[0_24px_70px_rgba(0,0,0,0.6)]"
         style={{ fontFamily: "'Nunito', system-ui, sans-serif" }}
       >
-        {/* Top yellow tape strips (like a student pinned paper to board) */}
         <div className="absolute left-1/2 top-0 -translate-x-1/2 flex gap-5">
           <div className="h-6 w-10 -rotate-[8deg] rounded-b-sm bg-[#f8e070] opacity-80 shadow-sm" />
           <div className="h-6 w-10 rotate-[6deg]  rounded-b-sm bg-[#f8e070] opacity-80 shadow-sm" />
         </div>
 
-        {/* Handwritten heading */}
         <div className="mb-1 mt-3 text-center text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#64748b]">
           {st.mode === "foursquare" ? "DETENTION NOTICE" : "RECESS REPORT CARD"}
         </div>
 
-        {/* Main display title — no emoji, no glow, just massive display text */}
-        <h1
-          className="font-display text-center leading-[0.95] text-[#1a2740]"
-          style={{
-            textShadow: "none",
-            padding: "14px 0 6px",
-          }}
-        >
+        <h1 className="font-display text-center leading-[0.95] text-[#1a2740]" style={{ padding: "14px 0 6px" }}>
           <span style={{ fontSize: 60, display: "block", fontFamily: "'Luckiest Guy', cursive" }}>
-            {st.mode === "tetherball" ? "TETHERBALL" : st.mode === "wallball" ? "WALLBALL" : st.mode === "tag" ? "TAG!" : "FOUR SQUARE"}
+            {st.mode === "tetherball" ? "TETHERBALL" : st.mode === "wallball" ? "WALLBALL" : st.mode === "tag" ? "TAG!" : st.mode === "kickball" ? "KICKBALL" : "FOUR SQUARE"}
             <br />
             <span style={{ fontSize: 48, display: "block", color: "#c23227" }}>
-              {st.mode === "tetherball" ? "POLE WINNER" : st.mode === "wallball" ? "WALL MASTER" : st.mode === "tag" ? "LAST ONE FREE" : "RECESS KING"}
+              {st.mode === "tetherball" ? "POLE WINNER" : st.mode === "wallball" ? "WALL MASTER" : st.mode === "tag" ? "LAST ONE FREE" : st.mode === "kickball" ? (kickWon ? "FIELD GENERAL" : "GOOD GAME") : "RECESS KING"}
             </span>
           </span>
         </h1>
 
-        {/* Subtitle — hand-written feel */}
-        <p
-          className="mt-1 text-center text-sm font-bold leading-relaxed"
-          style={{ color: "#7a8899", fontStyle: "italic" }}
-        >
+        <p className="mt-1 text-center text-sm font-bold leading-relaxed" style={{ color: "#7a8899", fontStyle: "italic" }}>
           {st.mode === "tetherball"
             ? "You just hung the whole thing up. REX is still staring at the pole."
             : st.mode === "wallball"
               ? "You just knifed the last slice past ZIGGY. He's still searching the fence."
               : st.mode === "tag"
                 ? "You dodged every grab, every blob, every freeze. Pure blacktop survival."
-                : "You owned the blacktop. Every bot, every square, every badge. Recess is yours."}
+                : st.mode === "kickball"
+                  ? kickWon
+                    ? "You drove it deep, you ran it home, and the yard is yours."
+                    : "The bots eked it out this time. The plate will be waiting."
+                  : "You owned the blacktop. Every bot, every square, every badge. Recess is yours."}
         </p>
 
-        {/* Divider — like a hand-drawn rule line */}
         <div className="mx-auto my-5 w-11/12 border-b-2 border-dashed border-[#d8b8a0]" />
 
-        {/* Stats Grid — hand-lettered, reading like tally marks on a notebook page */}
         <div className="grid grid-cols-3 gap-4 text-center">
           {(st.mode === "tetherball"
-            ? ([
-                ["Points",  st.score,  "#3542ff"],
-                ["Your Fouls", st.fouls, "#f05a40"],
-                ["Bot Fouls",  st.opFouls, "#3a9a40"],
-              ] as const)
+            ? ([["Points", st.score, "#3542ff"], ["Your Fouls", st.fouls, "#f05a40"], ["Bot Fouls", st.opFouls, "#3a9a40"]] as const)
             : st.mode === "wallball"
-              ? ([
-                  ["Your Score", st.wallYou, "#3542ff"],
-                  ["Bot Score",  st.wallBot, "#f05a40"],
-                  ["Rallies",     st.rallies, "#3a9a40"],
-                ] as const)
-              : ([
-                  ["Points",  st.score,  "#F0A020"],
-                  ["Hits",   st.hits,   "#4050c0"],
-                  ["Perfect",st.perfects,"#20a8a0"],
-                  ["Kos",    st.kos,    "#c05050"],
-                  ["Streak", st.bestStreak,"#8050a0"],
-                  ["Rallies", st.rallies, "#308050"],
-                ] as const)).map(([label, value, col]) => (
+              ? ([["Your Score", st.wallYou, "#3542ff"], ["Bot Score", st.wallBot, "#f05a40"], ["Rallies", st.rallies, "#3a9a40"]] as const)
+              : st.mode === "kickball"
+                ? ([["You", st.kickYou, "#3542ff"], ["Bots", st.kickBot, "#f05a40"], ["Innings", 3, "#3a9a40"]] as const)
+                : ([["Points", st.score, "#F0A020"], ["Hits", st.hits, "#4050c0"], ["Perfect", st.perfects, "#20a8a0"], ["Kos", st.kos, "#c05050"], ["Streak", st.bestStreak, "#8050a0"], ["Rallies", st.rallies, "#308050"]] as const)
+          ).map(([label, value, col]) => (
             <div key={label} className="flex flex-col items-center">
-              <span
-                className="font-display text-4xl leading-none"
-                style={{ color: col, fontSize: 48 }}
-              >
+              <span className="font-display text-4xl leading-none" style={{ color: col, fontSize: 48 }}>
                 {value}
               </span>
               <span className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#a08870]">
@@ -381,12 +360,10 @@ export function Victory() {
           ))}
         </div>
 
-        {/* Note icon — hand-sketched badge, not emoji */}
         <div
           className="mx-auto mt-6 flex w-fit items-center gap-3 rounded-lg border-2 border-dashed border-[#c09880] px-4 py-2"
           style={{ background: "rgba(255,225,180,0.35)" }}
         >
-          {/* Tiny hand-drawn graduation cap SVG */}
           <svg width="34" height="26" viewBox="0 0 34 26">
             <path d="M17 2 2 12l15 10 15-10-15-10z" fill="#2F4460"/>
             <rect x="25" y="10" width="2.5" height="14" rx="1" fill="#C89628"/>
@@ -394,15 +371,14 @@ export function Victory() {
           </svg>
           <div className="flex flex-col">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#4a3a28]">
-              {st.mode === "tetherball" ? "Today's tether king" : st.mode === "wallball" ? "Wallball champion" : "Four-square hall monitor"}
+              {st.mode === "tetherball" ? "Today's tether king" : st.mode === "wallball" ? "Wallball champion" : st.mode === "kickball" ? "Kickball captain" : "Four-square hall monitor"}
             </span>
             <span className="text-[10px] font-bold" style={{ color: "#907060" }}>
-              Graduated recess, top of class
+              Best: {settings.highScores[st.mode] ?? st.score} pts
             </span>
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="mt-6 flex gap-3">
           <button
             onClick={() => st.start(st.mode)}
