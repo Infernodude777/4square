@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame, type Popup } from "../../game/store";
+import { useSettings } from "../../game/settings";
 import { TS } from "./tetherState";
 import { SHOTS, resolveShotKind, type ShotKind } from "../../game/tetherball";
 
@@ -242,8 +243,8 @@ function FinesseBand({ def, pct }: { def: (typeof SHOTS)[ShotKind]; pct: (v: num
 
 // ── Settings ─────────────────────────────────────────────────
 function SettingsBtn() {
-  const muted  = useGame((s) => s.muted);
-  const toggle = useGame((s) => s.toggleMute);
+  const muted  = useSettings((s) => s.muted);
+  const toggle = useSettings((s) => s.toggleMute);
   const toMenu = useGame((s) => s.toMenu);
   const [open, setOpen] = useState(false);
   return (

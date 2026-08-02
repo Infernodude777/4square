@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame, type Popup } from "../../game/store";
+import { useSettings } from "../../game/settings";
 import { BOTS, BOT_IDS, ROUND_TIME, blobMembers, modeDesc, modeTitle } from "../../game/tag";
 import { TS } from "./TagDirector";
 
@@ -165,8 +166,8 @@ function InfoCorner() {
     const iv = setInterval(() => setMode(TS.mode), 200);
     return () => clearInterval(iv);
   }, []);
-  const muted = useGame(s => s.muted);
-  const toggle = useGame(s => s.toggleMute);
+  const muted = useSettings(s => s.muted);
+  const toggle = useSettings(s => s.toggleMute);
   const toMenu = useGame(s => s.toMenu);
   return (
     <div className="pointer-events-auto absolute right-5 top-5 flex flex-col items-end gap-2">

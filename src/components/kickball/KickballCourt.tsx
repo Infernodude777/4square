@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import * as THREE from "three";
-import { BASE_POS, K_BALL_R, MOUND_Z } from "../../game/kickball";
+import { BASE_POS, MOUND_Z } from "../../game/kickball";
 
 /** Painted kickball diamond: chalk foul lines, bases, pitcher's mound. */
 export function KickballCourt() {
@@ -61,11 +61,6 @@ export function KickballCourt() {
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.012, BASE_POS[0][1] + 0.75]}>
         <planeGeometry args={[1.4, 0.09]} />
         <primitive object={lineMat} attach="material" />
-      </mesh>
-      {/* the kickball itself sits on the mound until pitched */}
-      <mesh position={[0, K_BALL_R + 0.2, MOUND_Z]}>
-        <sphereGeometry args={[K_BALL_R, 20, 20]} />
-        <meshStandardMaterial color="#e2483d" roughness={0.5} />
       </mesh>
     </group>
   );

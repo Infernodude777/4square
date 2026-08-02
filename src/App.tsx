@@ -20,11 +20,12 @@ import { BadgeToast } from "./components/BadgeToast";
 import { ControlsCard } from "./components/ControlsCard";
 import { useGame } from "./game/store";
 import { useSettings } from "./game/settings";
-import { setVolume } from "./game/audio";
+import { setVolume, setMuted } from "./game/audio";
 
 export default function App() {
   const phase = useGame((s) => s.phase);
   const mode = useGame((s) => s.mode);
+  const run = useGame((s) => s.run);
   const paused = useGame((s) => s.paused);
   const setPaused = useGame((s) => s.setPaused);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -35,10 +36,11 @@ export default function App() {
   const isTag = mode === "tag";
   const isKick = mode === "kickball";
 
-  // Push persisted volume into the audio engine once on boot.
+  // Push persisted volume + mute into the audio engine once on boot.
   useEffect(() => {
-    const v = useSettings.getState().volume;
-    setVolume(v);
+    const s = useSettings.getState();
+    setVolume(s.volume);
+    setMuted(s.muted);
   }, []);
 
   // Global pause: ESC or P toggles the pause menu during a match.
@@ -81,7 +83,7 @@ export default function App() {
       }`}
     >
       <Canvas
-        key={`${phase === "hub" ? "hub" : mode}`}
+        key={`${phase === "hub" ? "hub" : mode}-${run}`}
         shadows
         dpr={[1, 1.75]}
         frameloop={playing && paused ? "never" : "always"}

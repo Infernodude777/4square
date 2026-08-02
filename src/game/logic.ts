@@ -134,7 +134,10 @@ export function resolveOut(loser: EntityId) {
       sfx.cheer();
       setFace("player", "happy", 1.6);
       if (g().score >= TARGET_SCORE) {
-        setTimeout(() => g().win(), 1600);
+        setTimeout(() => {
+          const st = useGame.getState();
+          if (st.phase === "play" || st.phase === "point") st.win();
+        }, 1600);
       }
     } else {
       st.popup(`${nameOf(loser)} OUT`, "white");
@@ -206,7 +209,10 @@ export function onBounce(s: number | null, impact: number) {
       g().registerHit(perfect);
       if (g().score >= TARGET_SCORE) {
         leg.done = true;
-        setTimeout(() => g().win(), 1100);
+        setTimeout(() => {
+          const st = useGame.getState();
+          if (st.phase === "play" || st.phase === "point") st.win();
+        }, 1100);
         return;
       }
     }

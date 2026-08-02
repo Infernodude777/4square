@@ -582,6 +582,9 @@ function integrate(t: WallState, dt: number): boolean {
   if (b.z <= WALL_Z + BALL_R && v.z < 0) {
     if (b.y > WALL_HEIGHT) { callFoul(t, t.lastHitter ?? t.turn, "long"); return true; }
     if (t.bouncesBeforeWall === 0) { callFoul(t, t.lastHitter ?? t.turn, "short"); return true; }
+    // The rally is bounce → wall → bounce. A second bounce before the wall
+    // breaks that sequence and is a fault on the striker.
+    if (t.bouncesBeforeWall > 1) { callFoul(t, t.lastHitter ?? t.turn, "double"); return true; }
     b.z = WALL_Z + BALL_R;
     v.z = -v.z * WALL_BOUNCE;
     v.x *= 0.97;

@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
-import { skillFactor, botReactionFactor } from "../../game/settings";
+import { skillFactor, botReactionFactor, useSettings } from "../../game/settings";
 import {
   beginServe,
   releaseServe,
@@ -252,6 +252,9 @@ export function TetherDirector() {
           st.setPhase("point");
           winTimer.current = window.setTimeout(() => {
             const g = useGame.getState();
+            // Guard: if the player quit or restarted during the delay, don't
+            // fire a win / yank them back into a match.
+            if (g.mode !== "tetherball" || g.phase !== "point") { winTimer.current = null; return; }
             if (pWins) { g.win(); }
             else { resetTether(); beginServe(TS.current, "player"); g.setPhase("play"); }
             winTimer.current = null;
@@ -543,8 +546,10 @@ export function TetherDirector() {
       look.current.z    += (lz - look.current.z) * k2;
     }
     if (t.shake > 0) {
-      camera.position.x += (Math.random() - 0.5) * t.shake * 0.22;
-      camera.position.y += (Math.random() - 0.5) * t.shake * 0.18;
+      if (useSettings.getState().screenShake) {
+        camera.position.x += (Math.random() - 0.5) * t.shake * 0.22;
+        camera.position.y += (Math.random() - 0.5) * t.shake * 0.18;
+      }
       t.shake = Math.max(0, t.shake - dt * 2.0);
     }
     camera.lookAt(look.current);

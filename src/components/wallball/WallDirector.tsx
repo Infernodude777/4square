@@ -3,7 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
-import { skillFactor } from "../../game/settings";
+import { skillFactor, useSettings } from "../../game/settings";
 import {
   COURT_HALF_W, COURT_DEPTH, WALL_Z, WIN_SCORE, SHOTS,
   stepWall, tryHit, beginServe, predictLanding, callFoul, clamp,
@@ -145,6 +145,9 @@ export function WallDirector() {
         st.setPhase("point");
         winTimer.current = window.setTimeout(() => {
           const g = useGame.getState();
+          // Guard: if the player quit or restarted during the delay, don't
+          // fire a win / yank them back into a match.
+          if (g.mode !== "wallball" || g.phase !== "point") { winTimer.current = null; return; }
           if (youWon) g.win();
           else { resetWall(); beginServe(WS.current, "player"); g.setPhase("play"); }
           winTimer.current = null;
@@ -442,8 +445,10 @@ export function WallDirector() {
       camLook.current.z += (lz - camLook.current.z) * k2;
     }
     if (t.shake > 0) {
-      camera.position.x += (Math.random() - 0.5) * t.shake * 0.2;
-      camera.position.y += (Math.random() - 0.5) * t.shake * 0.16;
+      if (useSettings.getState().screenShake) {
+        camera.position.x += (Math.random() - 0.5) * t.shake * 0.2;
+        camera.position.y += (Math.random() - 0.5) * t.shake * 0.16;
+      }
     }
     camera.lookAt(camLook.current);
   }

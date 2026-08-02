@@ -34,7 +34,9 @@ export function HubHUD() {
       else if (dt < 4.4 && dt <= dw && dt <= dk) setNear("tetherball");
       else if (dk < 4.8 && dk <= dw) setNear("kickball");
       else if (dw < 5.6) setNear("wallball");
-      else if (!nearCourt && dtag < 9.0) setNear("tag");
+      // Must match the actual entry radius in HubDirector (dtag < 3.5) so the
+      // prompt never claims "Press E" where pressing E does nothing.
+      else if (!nearCourt && dtag < 3.5) setNear("tag");
       else setNear(null);
     }, 90);
     return () => clearInterval(id);

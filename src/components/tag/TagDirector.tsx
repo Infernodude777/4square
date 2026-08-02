@@ -151,10 +151,12 @@ export function TagDirector() {
       const def = BOTS[id];
       const ai  = botAI[id];
 
-      // Blob members follow the entity ahead of them in the chain
+      // Blob members follow the entity ahead of them in the chain — except
+      // the TAIL, which is a legal tagger and chases free players itself.
       if (t.mode === "blob" && bot.blobIdx > 0) {
         const m = blobMembers(t.entities);
-        if (bot.blobIdx < m.length) {
+        const isTail = bot.blobIdx === m.length - 1;
+        if (bot.blobIdx < m.length && !isTail) {
           const leader = m[bot.blobIdx - 1];
           ai.wander = { ...leader.pos };
           // Maintain minimum spacing
@@ -195,7 +197,12 @@ export function TagDirector() {
         else sfx.fault();
         st.setPhase("point");
         winTimer.current = window.setTimeout(() => {
-          useGame.getState().win();
+          const g = useGame.getState();
+          // Guard: if the player quit or restarted during the delay, don't
+          // yank them back into a match (or fire a win over the hub).
+          if (g.mode !== "tag" || g.phase !== "point") { winTimer.current = null; return; }
+          if (youWon) g.win();
+          else { resetTag(); g.setPhase("play"); }
           winTimer.current = null;
         }, 3200);
       }
@@ -236,8 +243,11 @@ function updateBotTarget(
   const all = Object.values(t.entities);
 
   if (t.mode === "regular" || t.mode === "blob") {
-    if (bot.isIt || (t.mode === "blob" && bot.blobIdx === 0)) {
-      // "it" or blob head: chase the nearest free target
+    // Blob: both the HEAD and the TAIL of the chain are legal taggers.
+    const blob = t.mode === "blob" ? blobMembers(t.entities) : [];
+    const isBlobTail = t.mode === "blob" && bot.blobIdx > 0 && bot.blobIdx === blob.length - 1;
+    if (bot.isIt || (t.mode === "blob" && bot.blobIdx === 0) || isBlobTail) {
+      // "it", blob head, or blob tail: chase the nearest free target
       const targets = all.filter(e =>
         e.id !== bot.id &&
         e.immunity <= 0 &&
@@ -251,7 +261,7 @@ function updateBotTarget(
         ai.wander.z += (Math.random() - 0.5) * 0.4;
       }
     } else if (t.mode === "blob" && bot.blobIdx > 0) {
-      // Blob followers handled in move loop
+      // Blob followers (non-tail) handled in move loop
     } else {
       // Regular tag: runner — flee from "it"
       runFrom(t, bot, def, ai);

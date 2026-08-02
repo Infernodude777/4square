@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
+import { useSettings } from "../../game/settings";
 import { sfx } from "../../game/audio";
 import { stepKick, kickTick, BASE_POS, KICK_ORIGIN } from "../../game/kickball";
 import { KS, resetKickball } from "./kickballState";
@@ -78,14 +79,20 @@ export function KickballDirector() {
       }
       overTimer.current = window.setTimeout(() => {
         const g = useGame.getState();
+        // Guard: if the player quit to the hub or restarted during the delay,
+        // don't fire a win / yank them back into a match.
+        if (g.mode !== "kickball" || g.phase === "hub" || KS.current.phase !== "over") {
+          overTimer.current = null;
+          return;
+        }
         if (youWon) g.win();
         else { resetKickball(); g.setPhase("play"); }
         overTimer.current = null;
       }, 2600);
     }
 
-    // camera shake
-    if (k.shake > 0) {
+    // camera shake (honours the screen-shake setting)
+    if (k.shake > 0 && useSettings.getState().screenShake) {
       camera.position.x += (Math.random() - 0.5) * k.shake * 0.3;
       camera.position.y += (Math.random() - 0.5) * k.shake * 0.2;
     }

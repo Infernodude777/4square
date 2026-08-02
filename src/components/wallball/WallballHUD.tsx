@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame, type Popup } from "../../game/store";
+import { useSettings } from "../../game/settings";
 import { SHOTS, resolveShotKind, WIN_SCORE, type ShotKind } from "../../game/wallball";
 import { WS } from "./wallballState";
 
@@ -222,8 +223,8 @@ function TimingMeter() {
 
 // ── Settings ─────────────────────────────────────────────────
 function SettingsBtn() {
-  const muted  = useGame((s) => s.muted);
-  const toggle = useGame((s) => s.toggleMute);
+  const muted  = useSettings((s) => s.muted);
+  const toggle = useSettings((s) => s.toggleMute);
   const toMenu = useGame((s) => s.toMenu);
   const [open, setOpen] = useState(false);
   return (

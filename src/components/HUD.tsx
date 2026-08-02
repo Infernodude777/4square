@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MOVES, TARGET_SCORE, type MoveId } from "../game/constants";
 import { RT } from "../game/refs";
 import { useGame, type Popup } from "../game/store";
+import { useSettings } from "../game/settings";
 
 const TONE: Record<Popup["tone"], string> = {
   gold: "#ffd23e",
@@ -119,8 +120,9 @@ function TimingMeter() {
 
 /* ── settings gear + pause ─────────────────────────────────── */
 export function SettingsBtn() {
-  const muted = useGame((s) => s.muted);
-  const toggleMute = useGame((s) => s.toggleMute);
+  // Mute lives in the persisted settings store — the single source of truth.
+  const muted = useSettings((s) => s.muted);
+  const toggleMute = useSettings((s) => s.toggleMute);
   const [open, setOpen] = useState(false);
 
   return (

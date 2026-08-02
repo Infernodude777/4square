@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { INITIAL_ASSIGN, INITIAL_LINE, sqOf, type EntityId } from "./constants";
-import { sfx, setMuted } from "./audio";
+import { sfx } from "./audio";
 import { useSettings } from "./settings";
 import { checkBadges } from "./achievements";
 
@@ -19,6 +19,8 @@ let uid = 1;
 interface GameState {
   phase: Phase;
   mode: Mode;
+  /** incremented on every start() so scenes can remount for a clean restart */
+  run: number;
   score: number;
   streak: number;
   bestStreak: number;
@@ -39,7 +41,6 @@ interface GameState {
   paused: boolean;
   assign: Record<number, EntityId>;
   line: EntityId;
-  muted: boolean;
   popups: Popup[];
   start: (mode?: Mode) => void;
   toMenu: () => void;
@@ -56,13 +57,13 @@ interface GameState {
   registerKO: () => void;
   setPhase: (p: Phase) => void;
   rallyInc: () => void;
-  toggleMute: () => void;
   win: () => void;
 }
 
 export const useGame = create<GameState>((set, get) => ({
   phase: "hub",
   mode: "foursquare",
+  run: 0,
   wraps: 0,
   fouls: 0,
   opFouls: 0,
@@ -80,7 +81,6 @@ export const useGame = create<GameState>((set, get) => ({
   rallies: 0,
   assign: { ...INITIAL_ASSIGN },
   line: INITIAL_LINE,
-  muted: false,
   popups: [],
 
   start: (mode) => {
@@ -93,6 +93,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       phase: "play",
       mode: next,
+      run: get().run + 1,
       score: 0,
       streak: 0,
       bestStreak: 0,
@@ -188,11 +189,6 @@ export const useGame = create<GameState>((set, get) => ({
         .patchStats({ totalRallies: stats.totalRallies + 1 });
       return { rallies: s.rallies + 1 };
     }),
-  toggleMute: () => {
-    const m = !get().muted;
-    setMuted(m);
-    set({ muted: m });
-  },
   win: () => {
     sfx.win();
     const st = get();

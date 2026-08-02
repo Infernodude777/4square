@@ -16,6 +16,7 @@ import {
 } from "../game/constants";
 import { RT } from "../game/refs";
 import { useGame } from "../game/store";
+import { useSettings } from "../game/settings";
 import {
   beginMatch,
   botHit,
@@ -463,8 +464,10 @@ export function Director() {
     look.current.y += (ly - look.current.y) * k2;
     look.current.z += (lz - look.current.z) * k2;
     if (RT.shake > 0) {
-      camera.position.x += (Math.random() - 0.5) * RT.shake * 0.28;
-      camera.position.y += (Math.random() - 0.5) * RT.shake * 0.2;
+      if (useSettings.getState().screenShake) {
+        camera.position.x += (Math.random() - 0.5) * RT.shake * 0.28;
+        camera.position.y += (Math.random() - 0.5) * RT.shake * 0.2;
+      }
       RT.shake = Math.max(0, RT.shake - dt * 1.8);
     }
     camera.lookAt(look.current);
