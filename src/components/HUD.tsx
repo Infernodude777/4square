@@ -65,8 +65,6 @@ function PopupItem({ p }: { p: Popup }) {
 
 /* ── timing meter (bottom-center, only when player can hit) ── */
 function TimingMeter() {
-  // Holds a live snapshot of the rally so the meter can re-render as the
-  // ball rises and falls. State (not a ref) so the component actually updates.
   const [snap, setSnap] = useState<{
     stance: "stand" | "crouch" | "air";
     move: MoveId;
@@ -119,7 +117,7 @@ function TimingMeter() {
   );
 }
 
-/* ── settings gear ─────────────────────────────────────────── */
+/* ── settings gear + pause ─────────────────────────────────── */
 export function SettingsBtn() {
   const muted = useGame((s) => s.muted);
   const toggleMute = useGame((s) => s.toggleMute);
@@ -149,8 +147,7 @@ export function SettingsBtn() {
                 <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: md.color }} />
                 <div>
                   <div className="text-[11px] font-extrabold tracking-wide text-white/90">
-                    {md.name}{" "}
-                    <span className="font-bold text-white/35">· {md.key}</span>
+                    {md.name} <span className="font-bold text-white/35">· {md.key}</span>
                   </div>
                   <div className="text-[10px] leading-snug text-white/45">{md.desc}</div>
                 </div>
@@ -158,7 +155,7 @@ export function SettingsBtn() {
             );
           })}
           <div className="mt-2 border-t border-white/10 pt-2 text-[9px] text-white/35">
-            A / D while hitting → curve the ball
+            A / D while hitting → curve the ball · ESC → pause
           </div>
           <button
             onClick={() => setOpen(false)}
@@ -174,10 +171,18 @@ export function SettingsBtn() {
 
 /* ── assembled HUD ─────────────────────────────────────────── */
 export function HUD() {
+  const setPaused = useGame((s) => s.setPaused);
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-body">
       <Score />
       <SettingsBtn />
+      <button
+        onClick={() => setPaused(true)}
+        className="pointer-events-auto absolute right-5 top-16 flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-base backdrop-blur-sm transition hover:bg-white/10"
+        title="Pause (ESC)"
+      >
+        ⏸
+      </button>
       <Popups />
       <TimingMeter />
     </div>
