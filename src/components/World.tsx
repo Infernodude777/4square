@@ -9,6 +9,9 @@ import {
   makeSignTexture,
 } from "../game/textures";
 import { swingAngle } from "./hub/constants";
+import { Hopscotch } from "./Hopscotch";
+import { JumpRope } from "./JumpRope";
+import { Crowd } from "./Crowd";
 
 
 function SwayTree({ pos, s = 1, phase = 0 }: { pos: [number, number, number]; s?: number; phase?: number }) {
@@ -390,6 +393,11 @@ export function World() {
           <meshStandardMaterial color="#b9c2ca" metalness={0.6} roughness={0.3} />
         </mesh>
       </group>
+
+      {/* ── Recess extras: hopscotch, double-dutch, and the fence crowd ── */}
+      <Hopscotch />
+      <JumpRope />
+      <Crowd />
 
       <Leaves />
     </group>
