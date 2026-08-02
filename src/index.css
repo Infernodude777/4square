@@ -6,6 +6,8 @@
   --animate-popfont: popfont 1.5s ease-out forwards;
   --animate-bannerin: bannerin 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   --animate-cardin: cardin 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-badgein: badgein 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-fadein: fadein 0.3s ease-out both;
 }
 
 html,
@@ -59,6 +61,26 @@ body {
   }
   100% {
     transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes badgein {
+  0% {
+    transform: translateY(-18px) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadein {
+  0% {
+    opacity: 0;
+  }
+  100% {
     opacity: 1;
   }
 }
