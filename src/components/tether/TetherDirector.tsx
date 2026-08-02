@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { skillFactor, botReactionFactor } from "../../game/settings";
 import {
   beginServe,
   releaseServe,
@@ -31,7 +32,7 @@ const input: Input = {
   crouch: false, jumpQ: false, hitQ: [],
 };
 
-// ─── Bot personality ───────────────────────────────────────────────────
+// ── Bot personality (scaled by the global difficulty setting) ─────────
 const BOT = {
   speed:       4.1,                    // confident strides but still human
   reachRadius: BALL_HIT_RANGE * 0.89, // stronger return radius
@@ -41,6 +42,9 @@ const BOT = {
   skimMax:     0.85,                   // only skims genuinely low balls
   lookahead:   0.48,                   // solid anticipation
 };
+
+/** Effective bot skill after the difficulty multiplier (0..1). */
+const botSkill = () => Math.min(1, BOT.skill * skillFactor());
 
 export function TetherDirector() {
   const { camera } = useThree();
@@ -413,10 +417,10 @@ export function TetherDirector() {
     // Human-like reaction error. REX sometimes commits a little early or
     // simply whiffs a fast ball instead of returning every shot perfectly.
     const incomingSpeed = t.ballVel.length();
-    const missChance = 0.04 + Math.min(0.12, incomingSpeed * 0.006) + (1 - BOT.skill) * 0.09;
+    const missChance = 0.04 + Math.min(0.12, incomingSpeed * 0.006) + (1 - botSkill()) * 0.09;
     if (Math.random() < missChance) {
       t.opSwing = 0;
-      t.opCooldown = 0.42 + Math.random() * 0.22;
+      t.opCooldown = (0.42 + Math.random() * 0.22) * botReactionFactor();
       return;
     }
 
@@ -430,7 +434,7 @@ export function TetherDirector() {
       if (playerClose && roll < 0.38)     useFinesse = true;
       if (playerFar   && roll < 0.30)     useFinesse = true;
       // Small skill-based variance
-      if (roll < BOT.skill * 0.15)        useFinesse = !useFinesse;
+      if (roll < botSkill() * 0.15)        useFinesse = !useFinesse;
     }
 
     let handY = 1.12;
@@ -443,7 +447,7 @@ export function TetherDirector() {
 
     // Imperfect contact height: most hits are decent, some are notably late.
     // Very fast balls create more timing error.
-    const timingJitter = 0.10 + (1 - BOT.skill) * 0.28 + Math.min(0.16, incomingSpeed * 0.008);
+    const timingJitter = 0.10 + (1 - botSkill()) * 0.28 + Math.min(0.16, incomingSpeed * 0.008);
     handY += (Math.random() - 0.5) * timingJitter * 1.6;
 
     // Execution is usually 55–85%. Only about 4% of attempts can become
@@ -451,7 +455,7 @@ export function TetherDirector() {
     const rareClutch = Math.random() < 0.06;
     const execution = rareClutch
       ? 0.93 + Math.random() * 0.06
-      : 0.55 + Math.random() * (BOT.skill * 0.52);
+      : 0.55 + Math.random() * (botSkill() * 0.52);
 
     const from = new THREE.Vector3(t.opPos.x, 0, t.opPos.z);
     const res  = tryHit(
@@ -464,7 +468,7 @@ export function TetherDirector() {
     const t = TS.current;
     if (res.applied) {
       t.opSwing    = 0;
-      t.opCooldown = 0.36 + Math.random() * 0.22;
+      t.opCooldown = (0.36 + Math.random() * 0.22) * botReactionFactor();
       const st     = useGame.getState();
       const def    = SHOTS[res.kind];
       const colMap: Record<string, string> = {
