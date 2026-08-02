@@ -6,7 +6,8 @@ import { TetherCourt } from "../tether/TetherCourt";
 import { Pole } from "../tether/Pole";
 import { RopeAndBall } from "../tether/RopeAndBall";
 import { HubDirector } from "./HubDirector";
-import { FOUR_SQUARE_POS, TETHER_POS, WALL_POS } from "./constants";
+import { FOUR_SQUARE_POS, TETHER_POS, WALL_POS, KICK_POS, TAG_POS } from "./constants";
+import { BASE_POS } from "../../game/kickball";
 
 /** A slim post-mounted sign that stands at the edge of each court. */
 function CourtSign({
@@ -154,8 +155,35 @@ export function HubScene() {
         <GroundLabel text="press E" position={[0, 0.02, 4.6]} color="#ffd6d0" />
       </group>
 
-      {/* Tag: open blacktop zone in the corridor — sign on a post */}
-      <group position={[0, 0, 1.5]}>
+      {/* ── KICKBALL — dedicated diamond; chalk matches the real field ── */}
+      <group position={KICK_POS}>
+        {/* diamond chalk lines (identical to KickballCourt's geometry) */}
+        {BASE_POS.map(([x1, z1], i) => {
+          const [x2, z2] = BASE_POS[(i + 1) % 4];
+          const mx = (x1 + x2) / 2;
+          const mz = (z1 + z2) / 2;
+          const len = Math.hypot(x2 - x1, z2 - z1);
+          const ang = Math.atan2(x2 - x1, z2 - z1);
+          return (
+            <mesh key={i} rotation-x={-Math.PI / 2} position={[mx, 0.012, mz]} rotation-z={-ang}>
+              <planeGeometry args={[len, 0.09]} />
+              <meshBasicMaterial color="#ecc44a" transparent opacity={0.55} depthWrite={false} />
+            </mesh>
+          );
+        })}
+        {/* bases */}
+        {BASE_POS.map(([x, z], i) => (
+          <mesh key={i} rotation-x={-Math.PI / 2} position={[x, 0.02, z]}>
+            <planeGeometry args={[0.5, 0.5]} />
+            <meshStandardMaterial color={i === 0 ? "#d8dde4" : "#f2f4f8"} roughness={0.7} />
+          </mesh>
+        ))}
+        <CourtSign title="KICKBALL" position={[0, 0, 5.6]} color="#7fc4ff" />
+        <GroundLabel text="press E" position={[0, 0.02, 5.0]} color="#d8ecff" />
+      </group>
+
+      {/* Tag: open blacktop zone in the south corridor — sign on a post */}
+      <group position={TAG_POS}>
         {/* post */}
         <mesh castShadow position={[0, 1.0, 0]}>
           <cylinderGeometry args={[0.045, 0.05, 2.0, 8]} />
