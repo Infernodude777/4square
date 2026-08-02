@@ -1,8 +1,8 @@
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Sky, Clouds, Cloud } from "@react-three/drei";
 import * as THREE from "three";
 import { World } from "../World";
+import { Atmosphere } from "../Atmosphere";
 import { CharacterBody } from "../CharacterBody";
 import { makeNameTag } from "../../game/textures";
 import { BOTS, BOT_IDS, TAG_YARD_HALF, blobMembers } from "../../game/tag";
@@ -182,17 +182,7 @@ function TagBoundary() {
 export function TagScene() {
   return (
     <>
-      <Sky distance={4000} sunPosition={[70, 38, -80]} turbidity={4} rayleigh={1.4} />
-      <fog attach="fog" args={["#cfe3ee", 55, 180]} />
-      <hemisphereLight args={["#d8ecff", "#7a8a66", 0.65]} />
-      <ambientLight intensity={0.28} />
-      <directionalLight position={[14, 22, -10]} intensity={1.6} color="#fff2dd" castShadow
-        shadow-mapSize={[2048, 2048]} shadow-camera-left={-20} shadow-camera-right={20}
-        shadow-camera-top={20} shadow-camera-bottom={-20} shadow-bias={-0.0004} />
-      <Clouds material={THREE.MeshBasicMaterial}>
-        <Cloud position={[-28, 26, -55]} speed={0.10} opacity={0.70} segments={22} bounds={[12, 3, 3]} color="#ffffff" />
-        <Cloud position={[24, 30, -68]} speed={0.08} opacity={0.60} segments={18} bounds={[14, 3, 3]} color="#fdfdff" />
-      </Clouds>
+      <Atmosphere />
 
       <World />
       <TagBoundary />
