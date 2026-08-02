@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { skillFactor } from "../../game/settings";
 import {
   COURT_HALF_W, COURT_DEPTH, WALL_Z, WIN_SCORE, SHOTS,
   stepWall, tryHit, beginServe, predictLanding, callFoul, clamp,
@@ -28,6 +29,9 @@ const BOT = {
   skill:     0.92,  // high skill and execution quality
   clearOut:  1.8,   // steps aside smartly after hitting
 };
+
+/** Effective bot skill after the difficulty multiplier (0..1). */
+const botSkill = () => Math.min(1, BOT.skill * skillFactor());
 
 
 
@@ -244,7 +248,7 @@ export function WallDirector() {
       const res = tryHit(
         t, "op", hand, false, false, 0,
         Math.random() < 0.25,
-        0.6 + Math.random() * BOT.skill * 0.4,
+        0.6 + Math.random() * botSkill() * 0.4,
       );
       if (res.applied) {
         t.opSwing = 0;
@@ -350,12 +354,12 @@ export function WallDirector() {
     if (hand.distanceTo(t.ballPos) > BOT.reach) return;
 
     // Masterful execution
-    const missCh = (1 - BOT.skill) * 0.08; // very low miss chance for grandmaster Ziggy
+    const missCh = (1 - botSkill()) * 0.08; // very low miss chance for grandmaster Ziggy
     if (Math.random() < missCh) { t.opCooldown = 0.3; return; }
 
     const clutch = Math.random() < 0.15;
     const exec   = clutch ? 0.95 + Math.random() * 0.05
-                          : 0.72 + Math.random() * (BOT.skill * 0.28);
+                          : 0.72 + Math.random() * (botSkill() * 0.28);
 
     // ── Shot selection: ZIGGY reads the ball height and where you're standing,
     //    then picks from the same nine-shot arsenal you have.
