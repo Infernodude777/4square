@@ -1,13 +1,13 @@
 // ── Playground layout ────────────────────────────────────────
-//  The yard is a fenced 26×26 blacktop. Courts are laid out in three
-//  clean, non-overlapping zones with a wide walking corridor between
-//  them so nothing visually collides.
+//  The yard is a fenced 26×26 blacktop. Courts are laid out in clean,
+//  non-overlapping zones with a wide walking corridor between them so
+//  nothing visually collides.
 //
 //        ┌──────── school building (north) ────────┐
 //        │            WALLBALL  (z ≈ −10 … −5)     │
 //        │                                          │
-//        │   FOUR SQUARE          TETHERBALL        │
-//        │   (x ≈ −11…−3)         (x ≈ 4…10)        │
+//        │   FOUR SQUARE    KICKBALL    TETHERBALL  │
+//        │   (x ≈ −11…−3)   (centre)    (x ≈ 4…10)  │
 //        │            ↑ spawn / corridor ↑          │
 //        └──────────── playground (south) ──────────┘
 
@@ -19,6 +19,13 @@ export const TETHER_POS: [number, number, number] = [7, 0, 4];
 
 /** Wall plane sits here; the court extends south (+Z) about 5.4 m */
 export const WALL_POS: [number, number, number] = [0, 0, -10];
+
+/**
+ * Kickball diamond — its own dedicated patch in the open centre of the
+ * yard. MUST match the KICK_ORIGIN used by the kickball scene so the hub
+ * chalk lines up with where the game actually plays.
+ */
+export const KICK_POS: [number, number, number] = [2, 0, 0];
 
 /** Where the player drops in — open corridor, south of both courts */
 export const SPAWN: [number, number, number] = [0, 0, 10];
@@ -74,5 +81,5 @@ export const SWING_FACING = SWING_ROT_Y - Math.PI;
 /** Clear patch of blacktop to hop down onto, in front of the frame. */
 export const SWING_DISMOUNT = swingLocalToWorld(SWING_SEAT_X, 0, -1.8);
 
-/** Tag game: player enters by pressing E somewhere in the open yard centre */
-export const TAG_POS: [number, number, number] = [0, 0, 0];
+/** Tag game: player enters by pressing E in the corridor, far enough from the spawn point that a fresh drop-in can't trigger it accidentally */
+export const TAG_POS: [number, number, number] = [0, 0, 6];
