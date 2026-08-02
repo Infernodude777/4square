@@ -1,6 +1,8 @@
 // Tiny WebAudio synth — no assets, all procedural playground noise.
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+let volume = 0.55;
+let muted = false;
 
 function ac(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -9,16 +11,30 @@ function ac(): AudioContext | null {
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.5;
+    applyGain();
     master.connect(ctx.destination);
   }
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
 }
 
+function applyGain() {
+  if (master) master.gain.value = muted ? 0 : volume;
+}
+
 export function setMuted(m: boolean) {
-  if (master) master.gain.value = m ? 0 : 0.5;
-  else if (!m) ac();
+  muted = m;
+  applyGain();
+  if (!m) ac();
+}
+
+export function setVolume(v: number) {
+  volume = Math.max(0, Math.min(1, v));
+  applyGain();
+}
+
+export function getVolume() {
+  return volume;
 }
 
 function tone(
@@ -77,6 +93,10 @@ export const sfx = {
     noise(0.07, 0.35 + power * 0.25, 1600 + power * 1600);
     tone(220 + power * 260, 0.1, "triangle", 0.25 + power * 0.2, 0, 90);
   },
+  kick(power: number) {
+    noise(0.09, 0.4 + power * 0.3, 700 + power * 500, 0, "lowpass");
+    tone(160 + power * 120, 0.12, "triangle", 0.3 + power * 0.25, 0, 70);
+  },
   botHit() {
     noise(0.06, 0.16, 1400);
     tone(260, 0.08, "triangle", 0.14, 0, 110);
@@ -103,6 +123,11 @@ export const sfx = {
     tone(523, 0.14, "square", 0.08, 0);
     tone(659, 0.14, "square", 0.08, 0.09);
     tone(784, 0.2, "square", 0.09, 0.18);
+  },
+  homerun() {
+    for (let i = 0; i < 10; i++) noise(0.4, 0.14, 800 + Math.random() * 1200, i * 0.025, "bandpass");
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.24, "square", 0.1, i * 0.09));
+    tone(80, 0.4, "sine", 0.5, 0, 40);
   },
   whistle() {
     tone(2100, 0.12, "square", 0.05);
