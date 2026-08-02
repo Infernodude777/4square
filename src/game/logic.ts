@@ -15,6 +15,7 @@ import {
 import { RT, burst, setFace, type Leg } from "./refs";
 import { useGame } from "./store";
 import { sfx } from "./audio";
+import { skillFactor } from "./settings";
 
 const g = () => useGame.getState();
 
@@ -276,8 +277,9 @@ function planBotReturn(bot: Exclude<EntityId, "player">, incoming: MoveId, impac
   const def    = BOTS[bot];
   const e      = RT.entities[bot];
   const isKing = sqOf(bot, g().assign) === 4;
+  const skill  = Math.min(1, def.skill * skillFactor());
 
-  let missChance = 0.07 + (1 - def.skill) * 0.22;
+  let missChance = 0.07 + (1 - skill) * 0.22;
   if (incoming === "skimmer") missChance += 0.07;
   if (incoming === "smash")   missChance += 0.10;
   if (incoming === "drop")    missChance += 0.06;
@@ -302,7 +304,7 @@ function planBotReturn(bot: Exclude<EntityId, "player">, incoming: MoveId, impac
   const botSq = sqOf(bot, g().assign);
   const tSq = chooseBotTarget(botSq);
   const tc = SQ_CENTER[tSq];
-  const sigma = (1 - def.skill) * 0.58 + MOVES[move].err * 0.85;
+  const sigma = (1 - skill) * 0.58 + MOVES[move].err * 0.85;
 
   const willMiss = Math.random() < missChance;
   let aim: THREE.Vector3;
@@ -326,7 +328,7 @@ function planBotReturn(bot: Exclude<EntityId, "player">, incoming: MoveId, impac
     whiff: willMiss && Math.random() < 0.26,
     move,
     aim,
-    react: 0.025 + (1 - def.skill) * 0.22 + Math.random() * 0.065,
+    react: 0.025 + (1 - skill) * 0.22 + Math.random() * 0.065,
     bounceAt: RT.time,
   };
 }
@@ -335,8 +337,9 @@ export function botServeHit(bot: Exclude<EntityId, "player">) {
   const botSq = sqOf(bot, g().assign);
   const tSq = chooseBotTarget(botSq);
   const move: MoveId = Math.random() < 0.18 ? "lob" : Math.random() < 0.35 ? "skimmer" : "drive";
-  const sigma = (1 - BOTS[bot].skill) * 0.48;
-  const quality = 0.70 + BOTS[bot].skill * 0.25;
+  const skill = Math.min(1, BOTS[bot].skill * skillFactor());
+  const sigma = (1 - skill) * 0.48;
+  const quality = 0.70 + skill * 0.25;
   fireShot(bot, move, tacticalAim(tSq, move, sigma), quality);
   setFace(bot, "hit", 0.8);
 }
@@ -390,7 +393,7 @@ export function botHit(bot: Exclude<EntityId, "player">) {
   e.plan = null;
   e.swing = 0;
   if (plan.move === "smash") e.y = Math.max(e.y, 0.55);
-  const baseQuality = 0.62 + BOTS[bot].skill * 0.32;
+  const baseQuality = 0.62 + Math.min(1, BOTS[bot].skill * skillFactor()) * 0.32;
   fireShot(bot, plan.move, plan.aim, baseQuality);
   setFace(bot, "hit", 0.9);
   burst("hit", RT.ball.pos, MOVES[plan.move].color);
