@@ -1,15 +1,13 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import { currentPalette } from "../../game/atmosphere";
 
 // ─────────────────────────────────────────────────────────────
 //  YARD PROPS — the extras that make Falcon Elementary feel lived
 //  in (Season 2). Everything is procedural geometry: monkey bars,
-//  a picnic table, fence-line bushes, a flower bed, and chalk
-//  doodles on the blacktop. Colliders for the solid pieces live
-//  in hub/colliders.ts.
+//  a picnic table, fence-line bushes, a flower bed, and lamp
+//  posts. Colliders for the solid pieces live in hub/colliders.ts.
 // ─────────────────────────────────────────────────────────────
 
 /** Monkey bars — north end of the new east strip. */
@@ -124,45 +122,6 @@ export function FlowerBed({ pos }: { pos: [number, number, number] }) {
           </mesh>
         </group>
       ))}
-    </group>
-  );
-}
-
-/** Chalk doodles near the courts — pure schoolyard hand-writing. */
-export function ChalkDoodles() {
-  const scribble = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (scribble.current) {
-      // the hopscotch ladder chalk stays put; the arrow gently fades
-      (scribble.current.material as THREE.MeshBasicMaterial).opacity =
-        0.2 + Math.sin(clock.elapsedTime * 0.8) * 0.05;
-    }
-  });
-
-  return (
-    <group>
-      {/* "NO RUNNING" stencil by the four-square court */}
-      <Text position={[-7, 0.02, 8.9]} rotation-x={-Math.PI / 2} fontSize={0.34} color="#ffffff" anchorX="center" anchorY="middle" fillOpacity={0.22}>
-        NO RUNNING · HALL MONITOR
-      </Text>
-      {/* hopscotch chalk ladder beside the hopscotch board */}
-      <group position={[7.6, 0.015, -4.4]}>
-        {[0, 1, 2, 3].map((i) => (
-          <mesh key={i} rotation-x={-Math.PI / 2} position={[0, 0, -i * 0.55]}>
-            <planeGeometry args={[0.5, 0.34]} />
-            <meshBasicMaterial color="#e8c96a" transparent opacity={0.4} depthWrite={false} />
-          </mesh>
-        ))}
-      </group>
-      {/* recess-forever heart near the spawn */}
-      <Text position={[-2.2, 0.02, 11.4]} rotation-x={-Math.PI / 2} fontSize={0.3} color="#ff9ab0" anchorX="center" anchorY="middle" fillOpacity={0.3}>
-        ♥ recess forever
-      </Text>
-      {/* the arrow is decorative (drives the ref fade above) */}
-      <mesh ref={scribble} rotation-x={-Math.PI / 2} position={[0.4, 0.02, 10.4]}>
-        <planeGeometry args={[0.7, 0.28]} />
-        <meshBasicMaterial color="#8fd8cf" transparent opacity={0.22} depthWrite={false} />
-      </mesh>
     </group>
   );
 }

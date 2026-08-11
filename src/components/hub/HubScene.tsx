@@ -11,7 +11,7 @@ import {
   BASKET_POS, GAGA_POS, DODGE_POS, HOPSCOTCH_POS, REDLIGHT_POS,
 } from "./constants";
 import {
-  MonkeyBars, PicnicTable, Bushes, ChalkDoodles, FlowerBed, LampPosts,
+  MonkeyBars, PicnicTable, Bushes, FlowerBed, LampPosts,
 } from "./Props";
 import { BASE_POS } from "../../game/kickball";
 import { PIT_R, OCTA, WALL_H as GAGA_WALL_H } from "../../game/gaga";
@@ -52,31 +52,6 @@ function CourtSign({
         </Text>
       </group>
     </group>
-  );
-}
-
-/** Painted chalk arrow on the blacktop that points toward a court. */
-function GroundLabel({
-  text,
-  position,
-  color,
-}: {
-  text: string;
-  position: [number, number, number];
-  color: string;
-}) {
-  return (
-    <Text
-      position={position}
-      rotation-x={-Math.PI / 2}
-      fontSize={0.42}
-      color={color}
-      anchorX="center"
-      anchorY="middle"
-      fillOpacity={0.34}
-    >
-      {text}
-    </Text>
   );
 }
 
@@ -135,7 +110,6 @@ function BasketballCourtStatic() {
         </mesh>
       </group>
       <CourtSign title="BASKETBALL" position={[0, 0, -2.6]} color="#ffa63e" />
-      <GroundLabel text="press E" position={[0, 0.02, -4.2]} color="#ffe0c0" />
     </group>
   );
 }
@@ -168,7 +142,6 @@ function GagaPitStatic() {
         );
       })}
       <CourtSign title="GAGA" position={[0, 0, 4.4]} color="#b58cff" />
-      <GroundLabel text="press E" position={[0, 0.02, 3.6]} color="#e4d8ff" />
     </group>
   );
 }
@@ -194,7 +167,6 @@ function DodgeCourtStatic() {
         </mesh>
       ))}
       <CourtSign title="DODGEBALL" position={[0, 0, 2.9]} color="#ff5a3c" />
-      <GroundLabel text="press E" position={[0, 0.02, 2.2]} color="#ffd6d0" />
     </group>
   );
 }
@@ -233,7 +205,6 @@ function HopscotchBoardStatic() {
         <meshBasicMaterial color="#ffd23e" transparent opacity={0.85} depthWrite={false} />
       </mesh>
       <CourtSign title="HOPSCOTCH" position={[1.9, 0, -4.2]} color="#8ae06b" rotationY={Math.PI / 2} />
-      <GroundLabel text="press E" position={[0, 0.02, -0.8]} color="#d8ffd0" />
     </group>
   );
 }
@@ -280,7 +251,6 @@ function RedLightLaneStatic() {
         </group>
       </group>
       <CourtSign title="RED LIGHT" position={[0, 0, 7.6]} color="#7dff9a" />
-      <GroundLabel text="press E · HOLD W TO RUN" position={[0, 0.02, 6.9]} color="#d8ffd0" />
     </group>
   );
 }
@@ -312,7 +282,6 @@ export function HubScene() {
       <group position={FOUR_SQUARE_POS}>
         <Court />
         <CourtSign title="FOUR SQUARE" position={[0, 0, -5.4]} color="#ffd23e" />
-        <GroundLabel text="press E" position={[0, 0.02, 5.3]} color="#fff3cf" />
       </group>
 
       {/* ── TETHERBALL — east side ── */}
@@ -321,7 +290,6 @@ export function HubScene() {
         <Pole />
         <RopeAndBall />
         <CourtSign title="TETHERBALL" position={[0, 0, -4.6]} color="#ff9a3c" />
-        <GroundLabel text="press E" position={[0, 0.02, 4.5]} color="#ffe0c0" />
       </group>
 
       {/* ── WALLBALL — north, against the building ── */}
@@ -364,7 +332,6 @@ export function HubScene() {
           </mesh>
         ))}
         <CourtSign title="WALLBALL" position={[4.7, 0, 2.6]} color="#ff6b5e" rotationY={-Math.PI / 2} />
-        <GroundLabel text="press E" position={[0, 0.02, 4.6]} color="#ffd6d0" />
       </group>
 
       {/* ── KICKBALL — dedicated diamond; chalk matches the real field ── */}
@@ -391,7 +358,6 @@ export function HubScene() {
           </mesh>
         ))}
         <CourtSign title="KICKBALL" position={[0, 0, 5.6]} color="#7fc4ff" />
-        <GroundLabel text="press E" position={[0, 0.02, 5.0]} color="#d8ecff" />
       </group>
 
       {/* ── BASKETBALL — north-east corner ── */}
@@ -422,7 +388,6 @@ export function HubScene() {
       <PicnicTable pos={[15.4, 0, 9.8]} />
       <Bushes positions={[[-12.2, 0, -2.0], [12.2, 0, -2.0]]} />
       <FlowerBed pos={[-8.0, 0, -13.9]} />
-      <ChalkDoodles />
       <LampPosts positions={[[15.3, 0, -9.0], [15.3, 0, 0], [15.3, 0, 9.0], [-12.3, 0, -9.0], [-12.3, 0, 9.0]]} />
 
       {/* Tag: open blacktop zone in the south corridor — sign on a post */}
@@ -446,10 +411,6 @@ export function HubScene() {
             TAG!
           </Text>
         </group>
-        <Text position={[0, 0.018, 2.2]} rotation-x={-Math.PI / 2} fontSize={0.42} color="#e2483d"
-          anchorX="center" anchorY="middle" fillOpacity={0.34}>
-          press E
-        </Text>
       </group>
 
       <Rig id="player" />

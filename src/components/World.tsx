@@ -375,40 +375,6 @@ export function World() {
         </group>
       </group>
 
-      {/* ── Cones stacked out of the way, west fence ── */}
-      {[0, 1, 2].map((i) => (
-        <mesh key={i} castShadow position={[-12.0, 0.19, 1.2 + i * 0.5]}>
-          <coneGeometry args={[0.17, 0.4, 10]} />
-          <meshStandardMaterial color="#ff7a2f" roughness={0.6} />
-        </mesh>
-      ))}
-      {/* spare kickball */}
-      <mesh castShadow position={[-11.9, 0.19, 3.1]}>
-        <sphereGeometry args={[0.19, 16, 16]} />
-        <meshStandardMaterial color="#d8342c" roughness={0.45} />
-      </mesh>
-
-      {/* ── Loose gear: soccer ball + spare basketball ── */}
-      <mesh castShadow position={[-2.2, 0.17, 11.2]}>
-        <sphereGeometry args={[0.17, 16, 16]} />
-        <meshStandardMaterial color="#f2f4f8" roughness={0.5} />
-      </mesh>
-      <mesh castShadow position={[12.0, 0.18, 6.4]}>
-        <sphereGeometry args={[0.18, 16, 16]} />
-        <meshStandardMaterial color="#e2711d" roughness={0.5} />
-      </mesh>
-      {/* trash can beside the fountain */}
-      <group position={[12.6, 0, 1.9]}>
-        <mesh castShadow position={[0, 0.42, 0]}>
-          <cylinderGeometry args={[0.24, 0.2, 0.84, 14]} />
-          <meshStandardMaterial color="#4f5a66" metalness={0.45} roughness={0.5} />
-        </mesh>
-        <mesh position={[0, 0.9, 0]}>
-          <cylinderGeometry args={[0.26, 0.24, 0.06, 14]} />
-          <meshStandardMaterial color="#3a434e" metalness={0.5} roughness={0.4} />
-        </mesh>
-      </group>
-
       {/* ── Water fountain: east fence, between the courts ── */}
       <group position={[12.2, 0, 0.5]}>
         <mesh castShadow position={[0, 0.45, 0]}>

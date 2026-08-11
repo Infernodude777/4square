@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Scene } from "./components/Scene";
 import { HUD } from "./components/HUD";
 import { TetherScene } from "./components/tether/TetherScene";
@@ -234,7 +234,6 @@ export default function App() {
       }`}
     >
       <Canvas
-        key={`${phase === "hub" ? "hub" : mode}-${run}`}
         shadows={shadows}
         dpr={dpr}
         gl={{ preserveDrawingBuffer: true }}
@@ -246,39 +245,49 @@ export default function App() {
           // r3f's `shadows` prop sets the deprecated PCFSoftShadowMap — pin the
           // non-deprecated PCF type so the console stays clean on three r185.
           gl.shadowMap.type = THREE.PCFShadowMap;
+          // The canvas lives for the whole session now (no per-mode remount), so
+          // a context loss here is a genuine GPU hiccup. Ask the browser to
+          // restore it and hide the reload card the moment it's back — three
+          // re-initialises itself on webglcontextrestored.
           gl.domElement.addEventListener("webglcontextlost", (e) => {
-            // GPU resets are usually unrecoverable — stop the loop, show the
-            // reload card instead of a frozen canvas (P1-3).
             e.preventDefault();
             setReady(true);
             setGlLost(true);
           });
+          gl.domElement.addEventListener("webglcontextrestored", () => {
+            setGlLost(false);
+          });
           setReady(true);
         }}
       >
+        {/* Per-mode camera anchor: the canvas persists, so snap the default
+            camera into place whenever the scene changes (keyed on mode+run so
+            same-mode restarts re-snap too — each scene's director then eases
+            it from there on its first frames). */}
+        <CameraAnchor key={`${mode}-${run}`} pos={camPos} />
         {isHub && <Sky />}
         {isHub ? (
-          <HubScene />
+          <HubScene key={`hub-${run}`} />
         ) : isTether ? (
-          <TetherScene />
+          <TetherScene key={`${mode}-${run}`} />
         ) : isWall ? (
-          <WallballScene />
+          <WallballScene key={`${mode}-${run}`} />
         ) : isTag ? (
-          <TagScene />
+          <TagScene key={`${mode}-${run}`} />
         ) : isKick ? (
-          <KickballScene />
+          <KickballScene key={`${mode}-${run}`} />
         ) : isBasket ? (
-          <BasketballScene />
+          <BasketballScene key={`${mode}-${run}`} />
         ) : isDodge ? (
-          <DodgeballScene />
+          <DodgeballScene key={`${mode}-${run}`} />
         ) : isGaga ? (
-          <GagaScene />
+          <GagaScene key={`${mode}-${run}`} />
         ) : isHop ? (
-          <HopscotchGame />
+          <HopscotchGame key={`${mode}-${run}`} />
         ) : isRed ? (
-          <RedLightScene />
+          <RedLightScene key={`${mode}-${run}`} />
         ) : (
-          <Scene />
+          <Scene key={`${mode}-${run}`} />
         )}
         {isHub && <PhotoCamera active={photo} />}
       </Canvas>
@@ -330,6 +339,21 @@ export default function App() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58%,rgba(10,20,30,0.22)_100%)]" />
     </div>
   );
+}
+
+/* ── per-mode camera anchor ─────────────────────────────────── */
+// The Canvas is created once and stays alive for the whole session (the old
+// per-mode remount tore the WebGL context down on every game entry, which
+// fired webglcontextlost on some GPUs and flashed the "screen blanked out"
+// card). The default camera is repositioned here whenever the mode changes;
+// each scene's director then eases it from this spot on its first frames.
+function CameraAnchor({ pos }: { pos: [number, number, number] }) {
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    camera.position.set(pos[0], pos[1], pos[2]);
+    camera.lookAt(0, 0, 0);
+  }, [camera, pos[0], pos[1], pos[2]]);
+  return null;
 }
 
 /* ── one-shot confetti burst (daily complete) ───────────────── */
