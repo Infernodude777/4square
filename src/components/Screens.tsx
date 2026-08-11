@@ -49,39 +49,6 @@ export function Victory() {
                     : st.mode === "redlight" ? (st.rlWon ? "LIGHT RUNNER" : "BENCHED")
                       : "RECESS KING";
 
-  const quote =
-    st.mode === "tetherball"
-      ? "You just hung the whole thing up. REX is still staring at the pole."
-      : st.mode === "wallball"
-        ? "You just knifed the last slice past ZIGGY. He's still searching the fence."
-        : st.mode === "tag"
-          ? "You dodged every grab, every blob, every freeze. Pure blacktop survival."
-          : st.mode === "kickball"
-            ? kickWon
-              ? "You drove it deep, you ran it home, and the yard is yours."
-              : "The bots eked it out this time. The plate will be waiting."
-            : st.mode === "basketball"
-              ? st.hoopBot >= 5
-                ? "SLAM is still staring at the rim, replaying that swish."
-                : "SLAM spelled you out. The letters don't lie."
-              : st.mode === "dodgeball"
-                ? st.dodgeWon
-                  ? "Three bots, one ball, zero survivors. The court is yours."
-                  : "You got got. The bench will be waiting."
-                : st.mode === "gaga"
-                  ? st.gagaWon
-                    ? "You slapped, you dodged, you survived. The pit is yours."
-                    : "The bots ganged up on you. The pit remembers."
-                  : st.mode === "hopscotch"
-                    ? hopWon
-                      ? "One foot, ten cells, zero faults where it counted. Chalk legend."
-                      : "The bots hopped faster. Your feet need work."
-                    : st.mode === "redlight"
-                      ? st.rlWon
-                        ? "You froze on every red and flew on every green. The lane is yours."
-                        : "The robots out-froze you. The light remembers."
-                      : "You owned the blacktop. Every bot, every square, every badge. Recess is yours.";
-
   const statsRows =
     st.mode === "tetherball"
       ? ([[ "Points", st.score, "#3542ff" ], [ "Your Fouls", st.fouls, "#f05a40" ], [ "Bot Fouls", st.opFouls, "#3a9a40" ]] as const)
@@ -152,11 +119,7 @@ export function Victory() {
           </span>
         </h1>
 
-        <p className="mt-1 text-center text-sm font-bold leading-relaxed" style={{ color: "#7a8899", fontStyle: "italic" }}>
-          {quote}
-        </p>
-
-        <div className="mx-auto my-5 w-11/12 border-b-2 border-dashed border-[#d8b8a0]" />
+        <div className="mx-auto mt-5 w-11/12 border-b-2 border-dashed border-[#d8b8a0]" />
 
         <div className="grid grid-cols-3 gap-4 text-center">
           {statsRows.map(([label, value, col]) => (

@@ -9,14 +9,13 @@ function ToastCard({ id, badge, onDone }: { id: number; badge: BadgeDef; onDone:
   }, [id, onDone]);
 
   return (
-    <div className="animate-bannerin flex items-center gap-3 rounded-2xl border-2 border-[#ffd23e] bg-[#10141c]/95 px-6 py-4 shadow-[0_12px_50px_rgba(0,0,0,0.5)] backdrop-blur-md">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#ffd23e]/15 text-3xl">
+    <div className="animate-bannerin flex w-64 items-center gap-2.5 rounded-xl border border-[#ffd23e]/60 bg-[#10141c]/90 px-3 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-md">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ffd23e]/15 text-xl">
         {badge.emoji}
       </div>
-      <div>
-        <div className="text-[9px] font-extrabold tracking-[0.3em] text-[#ffd23e]/70">BADGE UNLOCKED</div>
-        <div className="font-display text-xl text-[#ffd23e]">{badge.name}</div>
-        <div className="text-[10px] font-bold text-white/55">{badge.desc}</div>
+      <div className="min-w-0">
+        <div className="text-[8px] font-extrabold tracking-[0.25em] text-[#ffd23e]/70">BADGE UNLOCKED</div>
+        <div className="truncate font-display text-sm text-[#ffd23e]">{badge.name}</div>
       </div>
     </div>
   );
@@ -30,7 +29,7 @@ export function BadgeToast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-50 flex flex-col items-center gap-3">
+    <div className="pointer-events-none absolute right-4 top-20 z-50 flex flex-col items-end gap-2">
       {toasts.map((t) => (
         <ToastCard key={t.id} id={t.id} badge={t.badge} onDone={dismiss} />
       ))}
