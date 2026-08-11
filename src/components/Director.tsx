@@ -47,6 +47,7 @@ export function Director() {
   const prevPhase = useRef("menu");
   const jumpQ = useRef(false);
   const look = useRef(new THREE.Vector3(0, 1, 0));
+  const lastVib = useRef(-9);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -155,7 +156,11 @@ export function Director() {
     const pSq = playerSquare();
 
     // ── aim raycast (always, for reticle)
-    ndc.set(RT.mouse.x, RT.mouse.y);
+    // Aim sensitivity scales the reticle's offset from screen centre, so a
+    // higher setting sweeps the court with less mouse travel (clamped to
+    // the viewport so the aim can't fly off-screen).
+    const sens = useSettings.getState().aimSensitivity;
+    ndc.set(clamp(RT.mouse.x * sens, -1, 1), clamp(RT.mouse.y * sens, -1, 1));
     ray.setFromCamera(ndc, camera);
     if (ray.ray.intersectPlane(planeY0, tmpV)) {
       RT.aim.set(clamp(tmpV.x, -16, 16), 0, clamp(tmpV.z, -16, 16));
@@ -467,6 +472,16 @@ export function Director() {
       if (useSettings.getState().screenShake) {
         camera.position.x += (Math.random() - 0.5) * RT.shake * 0.28;
         camera.position.y += (Math.random() - 0.5) * RT.shake * 0.2;
+        // Buzz on big impacts (smash, KO) — once per hit, haptics only.
+        if (
+          typeof navigator !== "undefined" &&
+          typeof navigator.vibrate === "function" &&
+          RT.shake > 0.6 &&
+          RT.time - lastVib.current > 0.5
+        ) {
+          navigator.vibrate(12);
+          lastVib.current = RT.time;
+        }
       }
       RT.shake = Math.max(0, RT.shake - dt * 1.8);
     }

@@ -43,6 +43,8 @@ const LINES: Record<BanterKind, string[]> = {
     "TURING: “victory logged. curiosity remains.”",
     "REX: “you're fast. I'll give you that.”",
     "ZIGGY: “rematch. NOW.”",
+    "ADA: “the light never even fazed you”",
+    "REX: “green or red, you run the lane”",
   ],
   lose: [
     "ADA: “I ran the numbers. You lost.”",
@@ -51,6 +53,8 @@ const LINES: Record<BanterKind, string[]> = {
     "TURING: “a fascinating failure mode”",
     "REX: “that's how it's done”",
     "ZIGGY: “don't worry, I got lucky”",
+    "ZIGGY: “red light got you too, huh?”",
+    "REX: “the light said stop. You didn't.”",
   ],
   serve: [
     "ADA: “serve it like you mean it”",
@@ -73,6 +77,7 @@ const LINES: Record<BanterKind, string[]> = {
     "ALAN: “no worries, it happens”",
     "TURING: “interesting choice”",
     "ZIGGY: “yikes”",
+    "REX: “the light was RED, champ”",
   ],
   rally: [
     "ADA: “this is getting statistically improbable”",
@@ -96,6 +101,8 @@ const LINES: Record<BanterKind, string[]> = {
     "TURING: “randomness favors the brave”",
     "REX: “I've seen better footwork”",
     "ZIGGY: “that's it? that's the shot?”",
+    "REX: “green means GO, not maybe”",
+    "ZIGGY: “my sneakers are faster than you”",
   ],
 };
 

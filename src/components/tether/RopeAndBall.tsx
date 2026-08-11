@@ -70,9 +70,15 @@ export function RopeAndBall() {
 
   const wrappedGeoRef = useRef<THREE.BufferGeometry | null>(null);
   const freeGeoRef    = useRef<THREE.BufferGeometry | null>(null);
+  // The rope/arc tube geometries are rebuilt when their curves change, and
+  // each rebuild allocates + disposes a BufferGeometry. Rebuilding at half
+  // rate is visually imperceptible for a spinning rope and halves the GC
+  // churn (the ball/shadow/clip transforms still update every frame).
+  const rebuildTick = useRef(0);
 
   useFrame(() => {
     const t = TS.current;
+    const rebuild = (rebuildTick.current = (rebuildTick.current + 1) % 2) === 0;
 
     // ── Ball ─────────────────────────────────────────────────
     if (ball.current) {
@@ -106,7 +112,7 @@ export function RopeAndBall() {
 
     // ── Wrapped rope helix around the pole ───────────────────
     const wrapsMag = Math.abs(t.wraps);
-    if (wrappedRef.current) {
+    if (rebuild && wrappedRef.current) {
       const segs   = Math.min(180, Math.max(8, Math.floor(wrapsMag * 28) + 8));
       const pts: THREE.Vector3[] = [];
       const sAngle = t.theta - Math.sign(t.wraps || 1) * wrapsMag * 2 * Math.PI;
@@ -127,7 +133,7 @@ export function RopeAndBall() {
     }
 
     // ── Free rope (straight line with slight sag) ─────────────
-    if (freeRef.current) {
+    if (rebuild && freeRef.current) {
       const start = new THREE.Vector3(Math.cos(t.theta) * POLE_R * 1.18, t.wrapY, Math.sin(t.theta) * POLE_R * 1.18);
       const end   = t.ballPos.clone();
       const mid   = start.clone().lerp(end, 0.5).sub(new THREE.Vector3(0, 0.14, 0));
@@ -141,7 +147,7 @@ export function RopeAndBall() {
     // ── Trajectory arc — shows the ball's true conical path around the
     //    pole (not linear extrapolation) as a colour-coded guide.
     //    Gold when ball is at smash height (attack opportunity), ice-blue otherwise.
-    if (arcRef.current && t.serveStage === "live") {
+    if (rebuild && arcRef.current && t.serveStage === "live") {
       const pts: THREE.Vector3[] = [];
       const orbitR  = t.ropeFree * Math.sin(t.phi);
       const orbitY  = t.wrapY - t.ropeFree * Math.cos(t.phi);

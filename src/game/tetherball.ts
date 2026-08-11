@@ -340,7 +340,9 @@ export const SHOTS: Record<ShotKind, ShotDef> = {
   },
   loft: {
     name: "HIGH LOFT",
-    idealY: 1.15, window: 0.28,
+    // Widened slightly (L9) — "tight but fair" now means it: still the
+    // tightest window in the arsenal, but landable without a calculator.
+    idealY: 1.15, window: 0.34,
     impulse: 5.2, phiKick:  0.45, phiVelDel: 4.2,
     lMul: 0.88, colour: "#b58cff",
     blurb: "Tight timing window — sails high over their head!",

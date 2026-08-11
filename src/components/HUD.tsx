@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { MOVES, TARGET_SCORE, type MoveId } from "../game/constants";
 import { RT } from "../game/refs";
-import { useGame, type Popup } from "../game/store";
+import { rankForFraction } from "../game/rank";
+import { useGame, visiblePopups, type Popup } from "../game/store";
 import { useSettings } from "../game/settings";
 
 const TONE: Record<Popup["tone"], string> = {
@@ -16,10 +17,22 @@ const TONE: Record<Popup["tone"], string> = {
 /* ── small score badge ─────────────────────────────────────── */
 function Score() {
   const score = useGame((s) => s.score);
+  // Live blacktop rank (Season 2): the chip climbs as you close in on
+  // the target — DODO → CHALKER → COURT ACE → COURT KING.
+  const rank = rankForFraction(Math.min(1, score / TARGET_SCORE));
   return (
     <div className="pointer-events-none absolute left-5 top-5 select-none rounded-2xl border border-white/15 bg-[#0d1219]/80 px-5 py-3 backdrop-blur-sm">
       <div className="text-[9px] font-extrabold tracking-[0.3em] text-white/40">SCORE</div>
       <div className="font-display text-4xl leading-none text-[#ffe066]">{score}</div>
+      <div className="mt-1 flex items-center gap-1.5">
+        <span className="text-sm leading-none">{rank.emoji}</span>
+        <span
+          className="text-[9px] font-extrabold tracking-[0.2em]"
+          style={{ color: rank.tint, textShadow: "0 1px 0 rgba(0,0,0,0.5)" }}
+        >
+          {rank.title}
+        </span>
+      </div>
       <div className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-gradient-to-r from-[#f7b32b] to-[#ff5a3c] transition-all duration-500"
@@ -36,7 +49,7 @@ function Popups() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-[28%]">
       <div className="flex flex-col-reverse items-center gap-1">
-        {popups.slice(-3).map((p) => (
+        {visiblePopups(popups).map((p) => (
           <PopupItem key={p.id} p={p} />
         ))}
       </div>
@@ -92,7 +105,7 @@ function TimingMeter() {
   if (!s.canHit) return null;
 
   const md = MOVES[s.move];
-  const ideal = s.move === "smash" ? 1.6 : md.idealY;
+  const ideal = md.idealY; // single source of truth (see L6)
   const H = 2.6;
   const zoneBot = Math.max(0, (ideal - md.win * 0.55) / H) * 100;
   const zoneH = Math.min(96, ((md.win * 1.1) / H) * 100);
@@ -125,17 +138,38 @@ export function SettingsBtn() {
   const toggleMute = useSettings((s) => s.toggleMute);
   const [open, setOpen] = useState(false);
 
+  // ESC closes the move-list popover, same as every other overlay.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <div className="pointer-events-auto absolute right-5 top-5 flex items-center gap-2">
+      {open && (
+        <button
+          className="fixed inset-0 z-20 cursor-default"
+          aria-label="Close move list"
+          onClick={() => setOpen(false)}
+        />
+      )}
       <button
         onClick={toggleMute}
         className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        aria-label={muted ? "Unmute" : "Mute"}
+        title={muted ? "Unmute" : "Mute"}
       >
         {muted ? "🔇" : "🔊"}
       </button>
       <button
         onClick={() => setOpen(true)}
         className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        aria-label="Show moves list"
+        title="Moves"
       >
         ⚙️
       </button>
@@ -182,6 +216,7 @@ export function HUD() {
         onClick={() => setPaused(true)}
         className="pointer-events-auto absolute right-5 top-16 flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-base backdrop-blur-sm transition hover:bg-white/10"
         title="Pause (ESC)"
+        aria-label="Pause (ESC)"
       >
         ⏸
       </button>

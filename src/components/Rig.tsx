@@ -1,5 +1,6 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { RT } from "../game/refs";
 import { BOTS, sqOf, type EntityId } from "../game/constants";
@@ -49,6 +50,22 @@ export function Rig({ id }: { id: EntityId }) {
   }, [sq, isKing, id]);
 
   const lastFace = useRef<string>("__none__");
+
+  // ── speech-bubble emotes (Season 2) ────────────────────────
+  // setEmote() writes RT.entities[id].emoteText + emoteUntil; this frame
+  // poll lifts changes into React state so the <Html/> bubble appears,
+  // drifts with the character, and clears when the timer expires.
+  const [bubble, setBubble] = useState<string | null>(null);
+  const lastEmote = useRef("");
+  useFrame(() => {
+    const e = RT.entities[id];
+    const show = RT.time < e.emoteUntil && e.emoteText;
+    const key = show ? e.emoteText : "";
+    if (key !== lastEmote.current) {
+      lastEmote.current = key;
+      setBubble(key || null);
+    }
+  });
 
   useFrame(({ clock }) => {
     const e = RT.entities[id];
@@ -166,6 +183,16 @@ export function Rig({ id }: { id: EntityId }) {
       <sprite position={[0, 2.38, 0]} scale={[1.42, 0.36, 1]}>
         <spriteMaterial map={tag} depthWrite={false} transparent />
       </sprite>
+
+      {/* chalk speech bubble (Season 2) — floats above the head */}
+      {bubble && (
+        <Html position={[0, 2.5, 0]} center style={{ pointerEvents: "none" }} zIndexRange={[30, 0]}>
+          <div className="emote-bubble">
+            {bubble}
+            <span className="emote-tail" />
+          </div>
+        </Html>
+      )}
 
       {/* hit-range ring */}
       <mesh ref={ring} rotation-x={-Math.PI / 2} position={[0, 0.018, 0]}>

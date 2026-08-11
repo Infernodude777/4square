@@ -79,7 +79,9 @@ export const MOVES: Record<MoveId, MoveDef> = {
     fric: 0.7,
     color: "#ff5a3c",
     err: 0.28,
-    idealY: 2.05,
+    // The single source of truth — logic.ts and the HUD timing meter both
+    // read idealY, so the table and the gameplay can never disagree.
+    idealY: 1.6,
     win: 1.05,
     desc: "Jump + hit a high ball. Pound it straight down.",
     key: "SPACE + CLICK",

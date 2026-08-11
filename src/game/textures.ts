@@ -447,6 +447,72 @@ export function drawFace(cv: HTMLCanvasElement, state: FaceState, screen: string
   g.shadowBlur = 0;
 }
 
+// ── gaga pit wood floor ────────────────────────────────────────
+export function makeWoodPitTexture(): THREE.CanvasTexture {
+  const S = 1024;
+  const c = canvas(S, S);
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#8a5a33";
+  g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 26; i++) {
+    g.fillStyle = i % 2 ? "rgba(120,72,38,0.35)" : "rgba(160,110,64,0.35)";
+    g.fillRect(0, (i / 26) * S, S, S / 26 - 4);
+  }
+  for (let i = 0; i < 1800; i++) {
+    g.fillStyle = `rgba(${60 + Math.random() * 60},${40 + Math.random() * 40},${20 + Math.random() * 25},0.3)`;
+    g.fillRect(Math.random() * S, Math.random() * S, 2, 3);
+  }
+  g.strokeStyle = "rgba(240,220,190,0.5)";
+  g.lineWidth = 10;
+  g.beginPath();
+  g.arc(S / 2, S / 2, S * 0.32, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = "rgba(240,220,190,0.34)";
+  g.font = '900 120px "Arial Black", system-ui';
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText("GA!", S / 2, S / 2);
+  return tex(c);
+}
+
+// ── dodgeball court blacktop ───────────────────────────────────
+export function makeDodgeCourtTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 1024;
+  const c = canvas(W, H);
+  const g = c.getContext("2d")!;
+  const P = (m: number) => ((m + 6.4) / 12.8) * W; // meters → px
+  g.fillStyle = "#7b8087";
+  g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 5000; i++) {
+    const v = 100 + Math.random() * 52;
+    g.fillStyle = `rgba(${v},${v + 2},${v + 7},${0.14 + Math.random() * 0.13})`;
+    g.fillRect(Math.random() * W, Math.random() * H, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  for (let i = 0; i < 9; i++) {
+    const x = Math.random() * W, y = Math.random() * H, r = 40 + Math.random() * 100;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(50,52,58,${0.09 + Math.random() * 0.12})`);
+    gr.addColorStop(1, "rgba(50,52,58,0)");
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
+  g.strokeStyle = "rgba(236,196,74,0.9)";
+  g.lineWidth = 9;
+  g.strokeRect(P(-5.6), P(-6.4), P(11.2), P(12.8));
+  g.lineWidth = 6;
+  g.beginPath();
+  g.moveTo(P(-5.6), P(0));
+  g.lineTo(P(5.6), P(0));
+  g.stroke();
+  g.fillStyle = "rgba(245,240,225,0.28)";
+  g.font = '700 30px "Comic Sans MS", cursive';
+  g.textAlign = "center";
+  g.fillText("YOUR SIDE", P(0), P(-5.4));
+  g.fillStyle = "rgba(255,140,90,0.3)";
+  g.fillText("THEIR SIDE", P(0), P(5.4));
+  return tex(c);
+}
+
 // ── hit burst star ──────────────────────────────────────────────
 export function makeBurstTexture(): THREE.CanvasTexture {
   const S = 128;

@@ -1,15 +1,19 @@
 // ── Playground layout ────────────────────────────────────────
-//  The yard is a fenced 26×26 blacktop. Courts are laid out in clean,
-//  non-overlapping zones with a wide walking corridor between them so
-//  nothing visually collides.
+//  The yard is a fenced 26×26 blacktop with the EAST side extended
+//  to 32 wide (Season 2) so the red-light lane gets its own strip.
+//  Courts are laid out in clean, non-overlapping zones with a wide
+//  walking corridor between them so nothing visually collides.
 //
 //        ┌──────── school building (north) ────────┐
-//        │            WALLBALL  (z ≈ −10 … −5)     │
-//        │                                          │
-//        │   FOUR SQUARE    KICKBALL    TETHERBALL  │
-//        │   (x ≈ −11…−3)   (centre)    (x ≈ 4…10)  │
-//        │            ↑ spawn / corridor ↑          │
-//        └──────────── playground (south) ──────────┘
+//        │  GAGA (NW)   WALLBALL (N)  HOPSCOTCH    │
+//        │  BASKETBALL (NE corner)                 │
+//        │                      RED LIGHT (east    │
+//        │                       strip, N→S lane)  │
+//        │   FOUR SQUARE    KICKBALL    TETHERBALL │
+//        │   (west)         (centre)     (east)    │
+//        │      DODGEBALL (south-east)             │
+//        │            ↑ spawn / corridor ↑         │
+//        └──────────── playground (south) ─────────┘
 
 /** 9×9 painted court, centred here. Spans x −11.5…−2.5, z −0.5…8.5 */
 export const FOUR_SQUARE_POS: [number, number, number] = [-7, 0, 4];
@@ -27,8 +31,55 @@ export const WALL_POS: [number, number, number] = [0, 0, -10];
  */
 export const KICK_POS: [number, number, number] = [2, 0, 0];
 
+/** Basketball half court — north-east corner, hoop against the east fence. */
+export const BASKET_POS: [number, number, number] = [11, 0, -7];
+
+/** Gaga pit — north-west corner (octagon, radius ~3.7). */
+export const GAGA_POS: [number, number, number] = [-8.5, 0, -8];
+
+/** Dodgeball court — south-east, between the bench and the slide. */
+export const DODGE_POS: [number, number, number] = [6.5, 0, 9.5];
+
+/**
+ * Playable hopscotch board — north-east of the kickball diamond, east of the
+ * wallball court. The board runs ~8.8 m NORTH (−z) of this origin, so it has
+ * to sit well south of the school building (front face ≈ z −14.25) and the
+ * north fence (z −13). z −4 puts the HOME plate at ≈ −12.8, clear of both.
+ */
+export const HOPSCOTCH_POS: [number, number, number] = [5.2, 0, -4];
+
+/**
+ * Red-light lane (Season 2) — its own strip along the extended east fence.
+ * The lane runs ~15 m south → north at x ≈ 14.5, between the dodgeball
+ * court (south) and the monkey bars (north).
+ */
+export const REDLIGHT_POS: [number, number, number] = [14.5, 0, 0];
+
 /** Where the player drops in — open corridor, south of both courts */
 export const SPAWN: [number, number, number] = [0, 0, 10];
+
+// ── E-key entry gates ────────────────────────────────────────
+// Single source of truth for the "press E to play" radii, shared by the
+// HubDirector E-key handler and the HubHUD prompt so the two can never
+// drift apart (a prompt that claims "Press E" where pressing E does
+// nothing is a classic bug).
+export type GateId =
+  | "foursquare" | "tetherball" | "wallball" | "swing" | "tag" | "kickball"
+  | "basketball" | "dodgeball" | "gaga" | "hopscotch" | "redlight";
+
+/** Radius at which pressing E actually starts the mode / mounts the swing. */
+export const ENTER_R: Record<GateId, number> = {
+  foursquare: 5.2, tetherball: 4.4, wallball: 5.6, swing: 2.0, tag: 3.5,
+  kickball: 4.8, basketball: 5.8, dodgeball: 5.0, gaga: 5.4, hopscotch: 4.2,
+  redlight: 3.4,
+};
+
+/** Slightly wider "something's here" radius (suppresses the tag prompt). */
+export const NEAR_ANY_R: Record<GateId, number> = {
+  foursquare: 5.5, tetherball: 4.8, wallball: 6.0, swing: 2.5, tag: 3.5,
+  kickball: 5.5, basketball: 6.0, dodgeball: 5.2, gaga: 5.6, hopscotch: 4.4,
+  redlight: 3.6,
+};
 
 /** Swingset position in the south-west corner of the schoolyard */
 export const SWING_POS: [number, number, number] = [-8.8, 0, 12.0];

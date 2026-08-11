@@ -1,10 +1,18 @@
 // Tiny WebAudio synth — no assets, all procedural playground noise.
+import { musicSetMuted } from "./music";
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let volume = 0.55;
 let muted = false;
+// Browsers block audio until the first user gesture — creating the context
+// any earlier just logs a warning and forces an unhandled resume rejection
+// (P0-7). Everything stays silent until unlockAudio()/sfx.unlock() flips
+// this on (wired to one-time pointer/key/touch listeners at boot).
+let gestureUnlocked = false;
 
 function ac(): AudioContext | null {
+  if (!gestureUnlocked) return null;
   if (typeof window === "undefined") return null;
   if (!ctx) {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -14,8 +22,14 @@ function ac(): AudioContext | null {
     applyGain();
     master.connect(ctx.destination);
   }
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
   return ctx;
+}
+
+/** Allow the audio context to exist — call from a user gesture. */
+export function unlockAudio() {
+  gestureUnlocked = true;
+  ac();
 }
 
 function applyGain() {
@@ -25,7 +39,8 @@ function applyGain() {
 export function setMuted(m: boolean) {
   muted = m;
   applyGain();
-  if (!m) ac();
+  // The recess radio respects the same mute switch.
+  musicSetMuted(m);
 }
 
 export function setVolume(v: number) {
@@ -82,7 +97,7 @@ function noise(dur: number, vol = 0.3, filterFreq = 1200, when = 0, type: Biquad
 
 export const sfx = {
   unlock() {
-    ac();
+    unlockAudio();
   },
   bounce(impact: number) {
     const v = Math.min(0.5, 0.08 + impact * 0.05);
@@ -144,3 +159,73 @@ export const sfx = {
     noise(0.9, 0.14, 1400, 0.5);
   },
 };
+
+// ── the new courts' sound kit ────────────────────────────────
+/** Soft net swish — a made shot dropping clean through. */
+export function swish() {
+  tone(1800, 0.14, "sine", 0.16, 0, 2400);
+  noise(0.18, 0.1, 5000, 0, "highpass");
+}
+
+/** Metallic rim clank — a miss that rattles the iron. */
+export function rim() {
+  tone(1250, 0.09, "square", 0.12);
+  noise(0.06, 0.14, 2600, 0, "bandpass");
+}
+
+/** Thock of a caught dodgeball. */
+export function catchThud() {
+  tone(180, 0.08, "triangle", 0.3, 0, 90);
+  noise(0.08, 0.3, 900, 0, "lowpass");
+}
+
+/** Open-palm GA! slap in the gaga pit. */
+export function gaSlap() {
+  noise(0.05, 0.28, 2200);
+  tone(320, 0.07, "triangle", 0.18, 0, 140);
+}
+
+/** Long recess buzzer — the bell that ends a match. */
+export function buzzer() {
+  tone(196, 0.5, "sawtooth", 0.18, 0, 196);
+  tone(147, 0.55, "sawtooth", 0.14, 0.02, 147);
+}
+
+/** School bell — the daily recess special has been conquered. */
+export function bell() {
+  tone(880, 0.9, "triangle", 0.16);
+  tone(1108.7, 0.9, "triangle", 0.12, 0.02);
+  tone(880, 0.7, "sine", 0.1, 1.0);
+  tone(880, 0.7, "sine", 0.1, 1.9);
+}
+
+/** GO! — the bright two-note call when the light flips green. */
+export function go() {
+  tone(660, 0.09, "square", 0.09);
+  tone(880, 0.16, "square", 0.1, 0.07);
+  noise(0.12, 0.05, 6000, 0.03, "highpass");
+}
+
+// ── playground ambience ──────────────────────────────────────
+// A very quiet, ever-present yard: distant chatter, a clanging kickball,
+// an occasional bird. Inaudible until the audio context unlocks, which is
+// exactly what we want for a recess backdrop.
+let ambientTimer: number | null = null;
+
+export function ambientStart() {
+  if (ambientTimer !== null) return;
+  ambientTimer = window.setInterval(() => {
+    const r = Math.random();
+    if (r < 0.3) noise(0.25, 0.02 + Math.random() * 0.02, 700 + Math.random() * 800);
+    else if (r < 0.45) tone(900 + Math.random() * 500, 0.05, "sine", 0.015);
+    else if (r < 0.5) tone(1600 + Math.random() * 600, 0.06, "sine", 0.012);
+    else if (r < 0.55) noise(0.4, 0.012, 500, 0, "lowpass");
+  }, 1800);
+}
+
+export function ambientStop() {
+  if (ambientTimer !== null) {
+    clearInterval(ambientTimer);
+    ambientTimer = null;
+  }
+}

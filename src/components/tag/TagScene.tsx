@@ -36,7 +36,7 @@ function TagChar({ id }: { id: string }) {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const e = TS.entities[id];
+    const e = TS.current.entities[id];
     if (!e || !root.current || !body.current) return;
 
     root.current.position.set(e.pos.x, e.y, e.pos.z);
@@ -54,8 +54,8 @@ function TagChar({ id }: { id: string }) {
 
     // Halo
     if (haloRef.current && haloMat.current) {
-      const isIt = e.isIt || (TS.mode === "blob" && e.blobIdx === 0);
-      const inBlob = TS.mode === "blob" && e.blobIdx > 0;
+      const isIt = e.isIt || (TS.current.mode === "blob" && e.blobIdx === 0);
+      const inBlob = TS.current.mode === "blob" && e.blobIdx > 0;
       const show = isIt || inBlob;
       haloRef.current.visible = show;
       if (show) {
@@ -99,7 +99,7 @@ function BlobChain() {
   const lineRef = useRef<THREE.Group>(null);
   useFrame(() => {
     if (!lineRef.current) return;
-    const t = TS;
+    const t = TS.current;
     if (t.mode !== "blob") { lineRef.current.visible = false; return; }
     lineRef.current.visible = true;
     const members = blobMembers(t.entities);
@@ -133,7 +133,7 @@ function ItCrown() {
   const ref = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (!ref.current) return;
-    const it = Object.values(TS.entities).find(e => e.isIt || (TS.mode === "blob" && e.blobIdx === 0));
+    const it = Object.values(TS.current.entities).find(e => e.isIt || (TS.current.mode === "blob" && e.blobIdx === 0));
     if (!it) { ref.current.visible = false; return; }
     ref.current.visible = true;
     ref.current.position.set(it.pos.x, 2.9 + Math.sin(clock.elapsedTime * 3) * 0.08, it.pos.z);

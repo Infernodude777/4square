@@ -38,12 +38,18 @@ export const emptyCounters = (): DailyCounters => ({
   totalPlays: 0,
 });
 
-const MODES = ["foursquare", "tetherball", "wallball", "tag", "kickball", "basketball", "dodgeball", "gaga", "hopscotch"];
+// Only modes actually shipped in this build may appear in the daily pool —
+// otherwise the challenge could never be completed. All ten courts now
+// ship (foursquare, tetherball, wallball, tag, kickball, basketball,
+// dodgeball, gaga, hopscotch + the Season 2 red-light lane).
+const MODES = ["foursquare", "tetherball", "wallball", "tag", "kickball", "basketball", "dodgeball", "gaga", "hopscotch", "redlight"];
 
+// Keep in sync with the MODES pool above — only shipped modes get names here.
 const MODE_NAMES: Record<string, string> = {
   foursquare: "Four Square", tetherball: "Tetherball", wallball: "Wallball",
   tag: "Tag", kickball: "Kickball", basketball: "Basketball",
   dodgeball: "Dodgeball", gaga: "Gaga Ball", hopscotch: "Hopscotch",
+  redlight: "Red Light Green Light",
 };
 
 const POOL: (() => DailyDef)[] = [

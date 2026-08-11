@@ -16,8 +16,16 @@ import { RT, burst, setFace, type Leg } from "./refs";
 import { useGame } from "./store";
 import { sfx } from "./audio";
 import { skillFactor } from "./settings";
+import { say } from "./banter";
 
 const g = () => useGame.getState();
+
+/**
+ * How many clean exchanges the current rally has survived. Used to trigger
+ * the "long rally" banter so the bots only chirp when a rally actually goes
+ * somewhere.
+ */
+let rallyStreak = 0;
 
 export function nameOf(id: EntityId): string {
   return id === "player" ? "YOU" : BOTS[id].name;
@@ -83,6 +91,8 @@ export function startRally() {
     setFace(king, "serve", 3);
   }
   sfx.whistle();
+  rallyStreak = 0;
+  if (Math.random() < 0.28) say("serve");
   g().rallyInc();
 }
 
@@ -115,6 +125,7 @@ export function resolveOut(loser: EntityId) {
   if (!leg || leg.done) return;
   leg.done = true;
   const st = g();
+  rallyStreak = 0;
   setFace(loser, "out", 3);
   RT.entities[loser].plan = null;
 
@@ -122,6 +133,7 @@ export function resolveOut(loser: EntityId) {
   const youCaused = leg.hitter === "player" && !youLost;
 
   if (youLost) {
+    say("botKo", "red", true);
     st.addScore(-3);
     st.popup("-3 · SENT TO THE LINE", "red", true);
     sfx.fault();
@@ -134,14 +146,20 @@ export function resolveOut(loser: EntityId) {
       sfx.cheer();
       setFace("player", "happy", 1.6);
       if (g().score >= TARGET_SCORE) {
+        // Match-ending KO: the win line is the star — skip the extra chirp so
+        // the three-popup display cap doesn't crowd out the knockout.
+        say("win", "gold", true);
         setTimeout(() => {
           const st = useGame.getState();
           if (st.phase === "play" || st.phase === "point") st.win();
         }, 1600);
+      } else {
+        say("ko", "green");
       }
     } else {
       st.popup(`${nameOf(loser)} OUT`, "white");
       sfx.fault();
+      if (Math.random() < 0.3) say("taunt");
     }
   }
 
@@ -178,6 +196,7 @@ export function onBounce(s: number | null, impact: number) {
       // illegal serve bounce → re-toss
       if (leg.hitter === "player") {
         g().popup("SERVE MUST BOUNCE IN YOUR SQUARE", "red");
+        say("fault", "red");
         RT.serveStage = "hold";
         RT.leg = null;
         RT.ball.vel.set(0, 0, 0);
@@ -208,6 +227,7 @@ export function onBounce(s: number | null, impact: number) {
       st_addHitScore(perfect);
       g().registerHit(perfect);
       if (g().score >= TARGET_SCORE) {
+        say("win", "gold", true);
         leg.done = true;
         setTimeout(() => {
           const st = useGame.getState();
@@ -224,6 +244,16 @@ export function onBounce(s: number | null, impact: number) {
       setFace(recv, "alert", 2.2);
     } else if (recv === "player") {
 
+    }
+
+    // A clean exchange survived — count it, and let the bots call out
+    // genuinely long rallies instead of every little point.
+    if (!leg.isServe) {
+      rallyStreak += 1;
+      if (rallyStreak >= 4) {
+        rallyStreak = 0;
+        say("rally");
+      }
     }
     return;
   }
@@ -447,8 +477,8 @@ export function humanHit(kind: "power" | "soft") {
 
   const md = MOVES[move];
   const relH = ball.pos.y - p.y;
-  let ideal = md.idealY;
-  if (move === "smash") ideal = 1.6;
+  // Single source of truth — idealY lives on the move definition (see L6).
+  const ideal = md.idealY;
   let q = 1 - Math.min(1, Math.abs(relH - ideal) / md.win);
   q *= Math.min(1, Math.max(0.25, 1.15 - hdist / 1.9));
   if (weak) q *= 0.5;
@@ -491,4 +521,5 @@ export function humanHit(kind: "power" | "soft") {
     st.popup(`${MOVES[move].name}!`, move === "smash" ? "red" : move === "skimmer" ? "cyan" : move === "lob" ? "purple" : "green");
   if (q < 0.35) st.popup("SHANKED…", "red");
   else if (q >= 0.85) st.popup("PERFECT TIMING", "gold");
+  if (q >= 0.85 && Math.random() < 0.5) say("perfect", "gold");
 }

@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { say } from "../../game/banter";
 import { skillFactor, botReactionFactor } from "../../game/settings";
 import {
   TAG_YARD_HALF, TAG_REACH, IT_IMMUNITY,
@@ -12,7 +13,9 @@ import {
 } from "../../game/tag";
 
 // ── Shared mutable state (outside React) ─────────────────────
-export let TS: TagState = createTagState();
+// Wrapped in { current } like TS/WS/KS for the other modes so the live
+// binding can never be silently re-exported out of sync with resetTag().
+export const TS: { current: TagState } = { current: createTagState() };
 
 const PLAYER_SPEED = 4.6;
 const PLAYER_SPRINT_SPEED = PLAYER_SPEED * SPRINT_MUL;
@@ -36,7 +39,7 @@ function randomWander(): { x: number; z: number } {
 }
 
 export function resetTag() {
-  TS = createTagState();
+  TS.current = createTagState();
   BOT_IDS.forEach(id => {
     botAI[id].wander = randomWander();
     botAI[id].reactCd = BOTS[id].react * botReactionFactor();
@@ -76,7 +79,7 @@ export function TagDirector() {
     const st = useGame.getState();
     if (st.mode !== "tag") return;
 
-    const t = TS;
+    const t = TS.current;
 
     // ── Init on first play frame ──────────────────────────────
     if (phase === "play" && prevPhase.current !== "play" && prevPhase.current !== "point") {
@@ -98,6 +101,7 @@ export function TagDirector() {
         t.banner = "GO!";
         t.bannerAt = t.time;
         sfx.whistle();
+        say("start");
       }
       doCam(dt);
       return;
@@ -193,6 +197,7 @@ export function TagDirector() {
     if (checkRoundEnd(t)) {
       if (winTimer.current === null) {
         const youWon = t.winnerMsg.startsWith("YOU");
+        say(youWon ? "win" : "lose", youWon ? "gold" : "red", true);
         if (youWon) { sfx.cheer(); st.addScore(15); }
         else sfx.fault();
         st.setPhase("point");
@@ -212,7 +217,7 @@ export function TagDirector() {
   });
 
   function doCam(dt: number) {
-    const p = TS.entities["player"];
+    const p = TS.current.entities["player"];
     if (!p) { camera.position.set(0, 14, 12); camera.lookAt(0, 0, 0); return; }
     const cx = p.pos.x * 0.35;
     const cy = 15;
@@ -339,6 +344,7 @@ function resolveTagging(t: TagState) {
       target.immunity = IT_IMMUNITY;
       t.itId = target.id;
       t.banner = target.isPlayer ? "YOU'RE IT!" : `${target.id.toUpperCase()} IS IT!`;
+      if (target.isPlayer) say("taunt", "red");
       t.bannerAt = t.time;
       sfx.hit(0.8);
       break;
@@ -353,6 +359,7 @@ function resolveTagging(t: TagState) {
       if (dist2(it, target) > TAG_REACH) continue;
       target.frozen = true;
       t.banner = target.isPlayer ? "YOU'RE FROZEN!" : `${target.id.toUpperCase()} FROZEN!`;
+      if (target.isPlayer) say("taunt", "red");
       t.bannerAt = t.time;
       sfx.hit(0.8);
     }
@@ -369,6 +376,7 @@ function resolveTagging(t: TagState) {
         t.blobSize++;
         target.immunity = IT_IMMUNITY;
         t.banner = target.isPlayer ? "YOU JOINED THE BLOB!" : `${target.id.toUpperCase()} ABSORBED!`;
+        if (target.isPlayer) say("taunt", "red");
         t.bannerAt = t.time;
         sfx.hit(0.8);
         sfx.line();

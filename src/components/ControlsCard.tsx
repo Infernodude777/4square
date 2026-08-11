@@ -37,6 +37,36 @@ const CONTROLS: Record<Mode, [string, string][]> = {
     ["—", "automatic base running"],
     ["—", "timing is everything"],
   ],
+  basketball: [
+    ["WASD", "walk to your spot"],
+    ["CLICK", "start your shot"],
+    ["CLICK", "release the meter"],
+    ["—", "make SLAM match it!"],
+  ],
+  dodgeball: [
+    ["WASD", "dodge on your half"],
+    ["CLICK", "throw at the reticle"],
+    ["CLICK", "catch a closing ball"],
+    ["—", "red glow = incoming throw"],
+  ],
+  gaga: [
+    ["WASD", "shuffle the pit"],
+    ["MOUSE", "aim your slap"],
+    ["CLICK", "GA!"],
+    ["—", "stay above the ball!"],
+  ],
+  hopscotch: [
+    ["CLICK", "hop to the next cell"],
+    ["—", "cells must go in order"],
+    ["—", "faults add 1.5s"],
+    ["—", "beat the fastest bot"],
+  ],
+  redlight: [
+    ["W", "run down the lane"],
+    ["S", "back up a step"],
+    ["—", "move on GREEN only"],
+    ["—", "freeze on RED or lose a heart"],
+  ],
 };
 
 export function ControlsCard() {
@@ -44,8 +74,10 @@ export function ControlsCard() {
   const rows = CONTROLS[mode];
 
   return (
-    <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 select-none">
-      <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#0d1219]/55 px-4 py-1.5 backdrop-blur-sm">
+    // Bottom-LEFT so it never overlaps the centred timing meters (the ball
+    // height gauge that sits at bottom-centre in every mode).
+    <div className="pointer-events-none absolute bottom-4 left-4 max-w-[calc(100vw-2rem)] select-none">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-white/10 bg-[#0d1219]/55 px-4 py-1.5 backdrop-blur-sm">
         {rows.map(([key, desc]) => (
           <div key={key + desc} className="flex items-center gap-1.5">
             <span className="rounded-md border border-white/15 bg-white/10 px-1.5 py-0.5 text-[9px] font-extrabold text-white/70">

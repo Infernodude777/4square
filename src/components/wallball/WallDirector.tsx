@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { say } from "../../game/banter";
 import { skillFactor, useSettings } from "../../game/settings";
 import {
   COURT_HALF_W, COURT_DEPTH, WALL_Z, WIN_SCORE, SHOTS,
@@ -33,7 +34,10 @@ const BOT = {
 /** Effective bot skill after the difficulty multiplier (0..1). */
 const botSkill = () => Math.min(1, BOT.skill * skillFactor());
 
-
+/** The yard notices when a rally really gets going (fires once per rally). */
+function maybeRallyLine(t: WallState) {
+  if (t.rallyLength === 5) say("rally");
+}
 
 export function WallDirector() {
   const { camera } = useThree();
@@ -139,6 +143,7 @@ export function WallDirector() {
         t.banner = youWon ? "GAME — YOU WIN" : "GAME — ZIGGY WINS";
         t.bannerSub = `${t.playerScore} – ${t.opScore}`;
         t.bannerAt = t.time;
+        say(youWon ? "win" : "lose", youWon ? "gold" : "red", true);
         // Stash the real match tally for the victory screen.
         st.setWallResult(t.playerScore, t.opScore);
         if (youWon) { st.addScore(10); sfx.win(); } else sfx.fault();
@@ -194,9 +199,10 @@ export function WallDirector() {
       if (res.applied) {
         t.playerSwing = 0;
         st.rallyInc();
+        maybeRallyLine(t);
         // Shot name already lives on the timing meter; only celebrate a
         // genuinely perfect strike.
-        if (res.perfect) { st.popup("PERFECT", "gold", true); sfx.perfect(); }
+        if (res.perfect) { st.popup("PERFECT", "gold", true); sfx.perfect(); say("perfect", "gold"); }
         sfx.hit(res.quality);
         if (res.kind === "smash")  { sfx.smash(); t.shake = 0.6; }
         if (res.kind === "bomb")   { sfx.smash(); t.shake = 0.5; }
@@ -256,6 +262,7 @@ export function WallDirector() {
       if (res.applied) {
         t.opSwing = 0;
         useGame.getState().rallyInc();
+        maybeRallyLine(t);
         sfx.botHit();
       }
       return;
@@ -385,11 +392,13 @@ export function WallDirector() {
       else if (r < 0.55) shift = true;              // slice
     } else {
       // Standing: BABY when you're deep, BOMB when you're tight, else DRIVE.
+      // Ball height matters too — a low skimmer begs for SLICE, a high one
+      // for an occasional surprise BOMB.
       if (playerDeep && r < 0.34) finesse = true;   // baby hit
       else if (playerTight && r < 0.42) shift = true; // bomb
+      else if (ballY < 0.72 && r < 0.16) shift = true; // low ball → slice
       else if (r < 0.14) shift = true;              // occasional surprise bomb
     }
-    void ballY;
 
     // Bot aims away from the player, but stays well inside the sidelines —
     // a wide ball is now an instant fault, so ZIGGY plays it safe.
@@ -405,6 +414,7 @@ export function WallDirector() {
       t.opSwing = 0;
       t.opCooldown = 0.3 + Math.random() * 0.15;
       useGame.getState().rallyInc();
+      maybeRallyLine(t);
       sfx.botHit();
       // Only announce ZIGGY's genuinely dangerous shots — no drive spam.
       if (res.kind !== "drive") {

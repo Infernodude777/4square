@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGame, type Popup } from "../../game/store";
+import { useGame, visiblePopups, type Popup } from "../../game/store";
 import { useSettings } from "../../game/settings";
 import { BOTS, BOT_IDS, ROUND_TIME, blobMembers, modeDesc, modeTitle } from "../../game/tag";
 import { TS } from "./TagDirector";
@@ -28,7 +28,7 @@ function Popups() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-[28%]">
       <div className="flex flex-col-reverse items-center gap-1">
-        {popups.slice(-3).map(p => <PopupItem key={p.id} p={p} />)}
+        {visiblePopups(popups).map(p => <PopupItem key={p.id} p={p} />)}
       </div>
     </div>
   );
@@ -39,7 +39,7 @@ function Timer() {
   const [v, setV] = useState({ time: ROUND_TIME, phase: "countdown" as string, countdown: 3, mode: "regular" as string });
   useEffect(() => {
     const iv = setInterval(() => {
-      const t = TS;
+      const t = TS.current;
       setV({ time: t.roundTimer, phase: t.phase, countdown: Math.ceil(t.countdown), mode: t.mode });
     }, 80);
     return () => clearInterval(iv);
@@ -76,7 +76,7 @@ function Banner() {
   const seen = useRef(-99);
   useEffect(() => {
     const iv = setInterval(() => {
-      const t = TS;
+      const t = TS.current;
       if (t.banner && t.bannerAt !== seen.current) {
         seen.current = t.bannerAt;
         setB({ text: t.banner, at: t.bannerAt });
@@ -97,15 +97,20 @@ function Banner() {
 
 // Status panel — who is IT, who is frozen / in blob
 function StatusPanel() {
-  const [snap, setSnap] = useState({ itId: "", frozenIds: [] as string[], blobSize: 0, phase: "countdown" as string });
+  const [snap, setSnap] = useState({
+    itId: "", frozenIds: [] as string[], blobSize: 0, phase: "countdown" as string,
+    itTime: 0, mode: "regular" as string,
+  });
   useEffect(() => {
     const iv = setInterval(() => {
-      const t = TS;
+      const t = TS.current;
       setSnap({
         itId: t.itId,
         frozenIds: Object.values(t.entities).filter(e => e.frozen).map(e => e.id),
         blobSize: t.blobSize,
         phase: t.phase,
+        itTime: t.entities.player?.itTime ?? 0,
+        mode: t.mode,
       });
     }, 100);
     return () => clearInterval(iv);
@@ -113,16 +118,22 @@ function StatusPanel() {
 
   if (snap.phase === "countdown") return null;
 
-  const mode = TS.mode;
+  const mode = snap.mode;
   const ids = ["player", ...BOT_IDS];
 
   return (
     <div className="pointer-events-none absolute left-5 top-5 select-none">
       <div className="rounded-2xl border border-white/15 bg-[#0d1219]/82 p-3 backdrop-blur-sm">
         <div className="mb-2 font-display text-[9px] tracking-[0.25em] text-white/50">PLAYERS</div>
+        {/* IT-time tracker — regular tag is the only mode where being IT is timed */}
+        {mode === "regular" && snap.itId === "player" && (
+          <div className="mb-1.5 rounded-md border border-[#ff4422]/30 bg-[#ff4422]/10 px-2 py-1 text-center text-[10px] font-extrabold tracking-wider text-[#ff6b5e]">
+            ⏱ IT TIME {snap.itTime.toFixed(1)}s
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           {ids.map(id => {
-            const e = TS.entities[id];
+            const e = TS.current.entities[id];
             if (!e) return null;
             const isPlayer = id === "player";
             const def = isPlayer ? null : BOTS[id];
@@ -135,7 +146,7 @@ function StatusPanel() {
               else if (e.frozen) { status = "FROZEN"; statusCol = "#38d6d0"; }
               else status = "FREE";
             } else {
-              const members = blobMembers(TS.entities);
+              const members = blobMembers(TS.current.entities);
               if (e.blobIdx === 0) { status = "BLOB HEAD"; statusCol = "#ff4422"; }
               else if (e.blobIdx > 0) { status = `BLOB #${e.blobIdx + 1}`; statusCol = "#ff9922"; }
               else status = "FREE";
@@ -163,7 +174,7 @@ function StatusPanel() {
 function InfoCorner() {
   const [mode, setMode] = useState("regular" as string);
   useEffect(() => {
-    const iv = setInterval(() => setMode(TS.mode), 200);
+    const iv = setInterval(() => setMode(TS.current.mode), 200);
     return () => clearInterval(iv);
   }, []);
   const muted = useSettings(s => s.muted);

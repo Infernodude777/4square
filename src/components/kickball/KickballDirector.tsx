@@ -4,11 +4,15 @@ import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { useSettings } from "../../game/settings";
 import { sfx } from "../../game/audio";
+import { say } from "../../game/banter";
 import { stepKick, kickTick, BASE_POS, KICK_ORIGIN } from "../../game/kickball";
 import { KS, resetKickball } from "./kickballState";
 
 // ─── Input ──────────────────────────────────────────────────────
-const input = { power: false, soft: false };
+// A FIFO queue, not lossy booleans — rapid double-clicks between frames
+// are each delivered to the state in order (stale ones are dropped by
+// kickTick when the ball isn't on the plate).
+const input = { queue: [] as ("power" | "soft")[] };
 
 export function KickballDirector() {
   const { camera } = useThree();
@@ -22,8 +26,8 @@ export function KickballDirector() {
     const pd = (e: MouseEvent) => {
       if (useGame.getState().phase !== "play") return;
       if ((e.target as HTMLElement | null)?.closest?.("button")) return;
-      if (e.button === 0) input.power = true;
-      else if (e.button === 2) input.soft = true;
+      if (e.button === 0) input.queue.push("power");
+      else if (e.button === 2) input.queue.push("soft");
     };
     const ctx = (e: Event) => e.preventDefault();
     window.addEventListener("pointerdown", pd);
@@ -55,14 +59,10 @@ export function KickballDirector() {
 
     const k = KS.current;
 
-    // feed queued input into the state
-    if (input.power) {
-      kickTick(k, "power");
-      input.power = false;
-    }
-    if (input.soft) {
-      kickTick(k, "soft");
-      input.soft = false;
+    // feed queued input into the state (kickTick validates the phase)
+    while (input.queue.length) {
+      const btn = input.queue.shift()!;
+      kickTick(k, btn);
     }
 
     stepKick(k, dt);
@@ -71,6 +71,7 @@ export function KickballDirector() {
     if (k.phase === "over" && overTimer.current === null) {
       const youWon = k.winner === "you";
       st.setKickResult(k.runsYou, k.runsBot);
+      say(youWon ? "win" : "lose", youWon ? "gold" : "red", true);
       if (youWon) {
         st.addScore(k.runsYou * 10);
         st.popup("FINAL WHISTLE", "gold", true);

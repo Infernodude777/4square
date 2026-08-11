@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGame, type Popup } from "../../game/store";
+import { useGame, visiblePopups, type Popup } from "../../game/store";
 import { useSettings } from "../../game/settings";
 import { TS } from "./tetherState";
 import { SHOTS, resolveShotKind, type ShotKind } from "../../game/tetherball";
@@ -45,7 +45,7 @@ function Popups() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-[30%]">
       <div className="flex flex-col-reverse items-center gap-1">
-        {popups.slice(-3).map((p) => <PopupItem key={p.id} p={p} />)}
+        {visiblePopups(popups).map((p) => <PopupItem key={p.id} p={p} />)}
       </div>
     </div>
   );

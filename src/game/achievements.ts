@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createDebouncedStorage } from "./persist";
 
 // ─────────────────────────────────────────────────────────────
 //  ACHIEVEMENTS & BADGES
@@ -38,6 +39,7 @@ export const BADGES: BadgeDef[] = [
   { id: "dodge-win",   name: "DODGEBALL CHAMP", desc: "Clear the court in dodgeball",        emoji: "🥎" },
   { id: "gaga-win",    name: "PIT BOSS",        desc: "Survive the gaga pit",                emoji: "🤾" },
   { id: "hop-win",     name: "CHALK LEGEND",    desc: "Beat the bots at hopscotch",          emoji: "🦘" },
+  { id: "redlight-win", name: "LIGHT RUNNER",   desc: "Beat the bots at Red Light Green Light", emoji: "🚦" },
   // ── milestones ──
   { id: "perfect-10",  name: "TIMING GURU",     desc: "Land 10 perfect hits total",          emoji: "⏱️" },
   { id: "ko-5",        name: "SLEDGE",          desc: "Knock out 5 opponents total",         emoji: "💥" },
@@ -45,6 +47,11 @@ export const BADGES: BadgeDef[] = [
   { id: "streak-8",    name: "UNSTOPPABLE",     desc: "Reach an 8-hit streak",               emoji: "🔥" },
   { id: "catch-5",     name: "HOT HANDS",       desc: "Make 5 catches in dodgeball",         emoji: "🧤" },
   { id: "swish-10",    name: "NET ONLY",        desc: "Sink 10 swishes in basketball",       emoji: "🌠" },
+  { id: "century",     name: "TRIPLE DIGITS",   desc: "Score 100+ in a single match",        emoji: "💯" },
+  { id: "no-fault",    name: "IRON SHOES",      desc: "Win hopscotch without one fault",     emoji: "🧦", secret: true },
+  { id: "first-win",   name: "FIRST BLOOD",     desc: "Win your very first match",           emoji: "🩸", secret: true },
+  { id: "sweep-3",     name: "BROOM SWEEP",     desc: "Win 3 different modes in one recess", emoji: "🧹", secret: true },
+  { id: "full-roster", name: "FULL ROSTER",     desc: "Play every court in the yard",        emoji: "📋", secret: true },
   { id: "daily",       name: "BELL RINGER",     desc: "Complete today's recess special",     emoji: "🔔" },
   { id: "lifer",       name: "LIFER",           desc: "Spend 30 minutes at recess",          emoji: "⏰", secret: true },
   { id: "marathon",    name: "RECESS LEGEND",   desc: "Spend 2 hours at recess",             emoji: "⏳", secret: true },
@@ -53,12 +60,12 @@ export const BADGES: BadgeDef[] = [
 ];
 
 export type BadgeEvent =
-  | { kind: "modeWin"; mode: string }
-  | { kind: "gameStart"; mode: string }
+  | { kind: "modeWin"; mode: string; totalWins?: number; winsThisSession?: string[]; score?: number; hopFaults?: number }
+  | { kind: "gameStart"; mode: string; modePlays?: Record<string, number> }
   | { kind: "homerun" }
   | { kind: "triple" }
-  | { kind: "catch" }
-  | { kind: "swish" }
+  | { kind: "catch"; count: number }
+  | { kind: "swish"; count: number }
   | { kind: "dailyDone" }
   | { kind: "stats"; perfects: number; kos: number; rallies: number; bestStreak: number; timePlayed: number }
   | { kind: "reset" };
@@ -90,7 +97,23 @@ export const useBadges = create<BadgeState>()(
       dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
       reset: () => set({ unlocked: [], toasts: [] }),
     }),
-    { name: "recess-royale-badges-v1" },
+    {
+      name: "recess-royale-badges-v1",
+      // v1: persist ONLY the unlocked list — toasts are transient UI and
+      // must never re-hydrate as stale notifications on a later visit.
+      version: 1,
+      migrate: (persisted) => {
+        const p = (persisted ?? {}) as { unlocked?: unknown };
+        const unlocked = Array.isArray(p.unlocked)
+          ? (p.unlocked as unknown[]).filter(
+              (id): id is string => typeof id === "string" && BADGES.some((b) => b.id === id),
+            )
+          : [];
+        return { unlocked };
+      },
+      partialize: (s) => ({ unlocked: s.unlocked }),
+      storage: createDebouncedStorage(),
+    },
   ),
 );
 
@@ -105,6 +128,7 @@ const MODE_BADGE: Record<string, string> = {
   dodgeball: "dodge-win",
   gaga: "gaga-win",
   hopscotch: "hop-win",
+  redlight: "redlight-win",
 };
 
 /** The original five modes — the pentathlete set. */
@@ -132,11 +156,23 @@ export function checkBadges(ev: BadgeEvent) {
       if (allModes.every((b) => unlocked.includes(b) || b === bid)) {
         unlock("superstar");
       }
+      // Season 2 milestone badges.
+      if (ev.totalWins === 1) unlock("first-win");
+      const session = new Set(ev.winsThisSession ?? []).size;
+      if (session >= 3) unlock("sweep-3");
+      if ((ev.score ?? 0) >= 100) unlock("century");
+      if (ev.mode === "hopscotch" && ev.hopFaults === 0) unlock("no-fault");
       break;
     }
-    case "gameStart":
+    case "gameStart": {
       if (ev.mode === "kickball") unlock("first-kick");
+      // Full roster — every shipped court has been stepped on.
+      const played = ev.modePlays ?? {};
+      if (Object.keys(MODE_BADGE).every((m) => (played[m] ?? 0) > 0)) {
+        unlock("full-roster");
+      }
       break;
+    }
     case "homerun":
       unlock("homer");
       break;
@@ -144,10 +180,12 @@ export function checkBadges(ev: BadgeEvent) {
       unlock("triple");
       break;
     case "catch":
-      unlock("catch-5");
+      // HOT HANDS — lifetime catches, matching the badge description.
+      if (ev.count >= 5) unlock("catch-5");
       break;
     case "swish":
-      unlock("swish-10");
+      // NET ONLY — lifetime swishes, matching the badge description.
+      if (ev.count >= 10) unlock("swish-10");
       break;
     case "dailyDone":
       unlock("daily");

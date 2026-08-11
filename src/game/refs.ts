@@ -23,6 +23,11 @@ export interface EntRT {
   sitting: boolean;
   /** body tilt along the facing axis (radians) — used by the swing */
   lean: number;
+  // ── speech-bubble emotes (Season 2) ──────────────────────
+  // Fired through setEmote() by the store's reaction moments and rendered
+  // as a chalk speech bubble above the character's head by <Rig/>.
+  emoteText: string;
+  emoteUntil: number;
 }
 
 export interface BotPlan {
@@ -104,6 +109,8 @@ function mkEnt(id: EntityId, x: number, z: number): EntRT {
     plan: null,
     sitting: false,
     lean: 0,
+    emoteText: "",
+    emoteUntil: 0,
   };
 }
 
@@ -146,4 +153,47 @@ export function setFace(id: EntityId, face: FaceState, dur = 1.4) {
 export function burst(kind: BurstKind, pos: THREE.Vector3, color: string) {
   RT.bursts.push({ kind, pos: pos.clone(), color, at: RT.time });
   if (RT.bursts.length > 24) RT.bursts.shift();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SPEECH-BUBBLE EMOTES (Season 2)
+//  Short chalk shouts the robots pop over their heads when the
+//  store's reaction moments fire (perfects, KOs, wins). Rendered
+//  by <Rig/>; any mode that uses Rig gets them for free.
+// ─────────────────────────────────────────────────────────────
+const BOT_IDS: Exclude<EntityId, "player">[] = ["ada", "grace", "alan", "turing"];
+
+/** Set a speech bubble above a character. Empty text clears it. */
+export function setEmote(id: EntityId, text: string, dur = 1.7) {
+  const e = RT.entities[id];
+  if (!e) return;
+  e.emoteText = text;
+  e.emoteUntil = RT.time + dur;
+}
+
+/** Pick a random robot — handy for reactions that don't have a target. */
+export function randomBot(): Exclude<EntityId, "player"> {
+  return BOT_IDS[Math.floor(Math.random() * BOT_IDS.length)];
+}
+
+export type EmoteKind = "wow" | "oof" | "win" | "lose" | "idle" | "cheer";
+
+const EMOTE_POOLS: Record<EmoteKind, string[]> = {
+  wow: ["wow", "no way!", "smooth", "OK?!", "showoff", "nice one"],
+  oof: ["oof", "my circuits!", "that HURT", "brb rebooting", "yikes"],
+  win: ["gg", "rematch!", "respect", "ok ok", "the crown…", "i'll be back"],
+  lose: ["lucky!", "rematch NOW", "the data lied", "again?", "hmpf"],
+  idle: ["?", "...", "beep", "zzz", "lunch?", "hi"],
+  cheer: ["go go!", "LET'S GO", "whoa!", "big play!", "WOW"],
+};
+
+/** A short emote line for a reaction kind. */
+export function pickEmote(kind: EmoteKind): string {
+  const pool = EMOTE_POOLS[kind];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** Pop a random robot an emote of the given kind. */
+export function emoteRandomBot(kind: EmoteKind, dur = 1.7) {
+  setEmote(randomBot(), pickEmote(kind), dur);
 }

@@ -9,7 +9,8 @@ import { sfx } from "../../game/audio";
 import {
   FOUR_SQUARE_POS, TETHER_POS, WALL_POS, SPAWN,
   SWING_POS, SWING_FACING, SWING_DISMOUNT, swingSeat,
-  TAG_POS, KICK_POS,
+  TAG_POS, KICK_POS, BASKET_POS, GAGA_POS, DODGE_POS, HOPSCOTCH_POS, REDLIGHT_POS,
+  ENTER_R, NEAR_ANY_R,
 } from "./constants";
 import { resolveCollisions } from "./colliders";
 
@@ -67,18 +68,34 @@ export function HubDirector() {
         const dw = dist2D(player, WALL_POS);
         const ds = dist2D(player, SWING_POS);
         const dk = dist2D(player, KICK_POS);
-        // Tag zone is the open centre — player must be far from all courts
+        const dB = dist2D(player, BASKET_POS);
+        const dG = dist2D(player, GAGA_POS);
+        const dD = dist2D(player, DODGE_POS);
+        const dH = dist2D(player, HOPSCOTCH_POS);
+        const dR = dist2D(player, REDLIGHT_POS);
+        // Tag zone is the open centre — player must be far from all courts.
+        // Entry radii come from ENTER_R / NEAR_ANY_R (shared with the HubHUD
+        // prompt so the two can never drift apart).
         const dtag = dist2D(player, TAG_POS);
-        const nearAnyCourt = d4 < 5.5 || dt < 4.8 || dw < 6.0 || ds < 2.5 || dk < 5.5;
+        const E = ENTER_R;
+        const N = NEAR_ANY_R;
+        const nearAnyCourt =
+          d4 < N.foursquare || dt < N.tetherball || dw < N.wallball || ds < N.swing || dk < N.kickball ||
+          dB < N.basketball || dG < N.gaga || dD < N.dodgeball || dH < N.hopscotch || dR < N.redlight;
 
-        if (ds < 2.0 && ds <= d4 && ds <= dt && ds <= dw && ds <= dk) {
+        if (ds < E.swing && ds <= d4 && ds <= dt && ds <= dw && ds <= dk) {
           swinging = true;
           sfx.ui();
-        } else if (d4 < 5.2 && d4 <= dt && d4 <= dw && d4 <= dk) start("foursquare");
-        else if (dt < 4.4 && dt <= dw && dt <= dk) start("tetherball");
-        else if (dk < 4.8 && dk <= dw) start("kickball");
-        else if (dw < 5.6) start("wallball");
-        else if (!nearAnyCourt && dtag < 3.5) start("tag");
+        } else if (dH < E.hopscotch) start("hopscotch");
+        else if (dB < E.basketball) start("basketball");
+        else if (dG < E.gaga) start("gaga");
+        else if (dD < E.dodgeball) start("dodgeball");
+        else if (d4 < E.foursquare && d4 <= dt && d4 <= dw && d4 <= dk) start("foursquare");
+        else if (dt < E.tetherball && dt <= dw && dt <= dk) start("tetherball");
+        else if (dk < E.kickball && dk <= dw) start("kickball");
+        else if (dR < E.redlight) start("redlight");
+        else if (dw < E.wallball) start("wallball");
+        else if (!nearAnyCourt && dtag < E.tag) start("tag");
       }
     };
     const up = (e: KeyboardEvent) => {
@@ -154,10 +171,10 @@ export function HubDirector() {
 
     // Pull in a little and rise with the rider while they're on the swing.
     const targetCam = swinging
-      ? new THREE.Vector3(p.pos.x * 0.85 + 1.6, 5.6 + p.y * 0.5, p.pos.z + 6.4)
+      ? new THREE.Vector3(p.pos.x * 0.85 + 1.6, 5.6 + p.pos.y * 0.5, p.pos.z + 6.4)
       : new THREE.Vector3(p.pos.x * 0.85, 7.4, p.pos.z + 9.0);
     const targetLook = swinging
-      ? new THREE.Vector3(p.pos.x, p.y + 0.9, p.pos.z - 1.6)
+      ? new THREE.Vector3(p.pos.x, p.pos.y + 0.9, p.pos.z - 1.6)
       : new THREE.Vector3(p.pos.x * 0.9, 0.9, p.pos.z - 2.2);
     const k = 1 - Math.exp(-dt * 4.0);
     camera.position.lerp(targetCam, k);

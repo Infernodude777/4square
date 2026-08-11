@@ -9,9 +9,9 @@ import {
   makeSignTexture,
 } from "../game/textures";
 import { swingAngle } from "./hub/constants";
-import { Hopscotch } from "./Hopscotch";
 import { JumpRope } from "./JumpRope";
 import { Crowd } from "./Crowd";
+import { useSettings } from "../game/settings";
 
 
 function SwayTree({ pos, s = 1, phase = 0 }: { pos: [number, number, number]; s?: number; phase?: number }) {
@@ -244,6 +244,9 @@ export function World() {
   const asphalt = useMemo(() => makeAsphaltTexture(), []);
   const grass = useMemo(() => makeGrassTexture(), []);
   const chainlink = useMemo(() => makeChainlinkTexture(), []);
+  // The FX toggle gates the drifting autumn leaves (the yard's ambient
+  // particle system) without touching the rest of the playground.
+  const particles = useSettings((s) => s.particles);
 
   return (
     <group>
@@ -269,12 +272,14 @@ export function World() {
         </mesh>
       ))}
 
-      {/* chain-link fence */}
+      {/* chain-link fence — the east side was extended (Season 2) to open
+          the strip that hosts the red-light lane, so the east fence runs at
+          x = 16 while the other three sides stay at 13. */}
       {[
         [0, -13, 0],
         [0, 13, 0],
-        [-13, 0, Math.PI / 2],
-        [13, 0, Math.PI / 2],
+        [-16, 0, Math.PI / 2],
+        [16, 0, Math.PI / 2],
       ].map(([x, z, ry], i) => (
         <mesh key={i} position={[x, 1.2, z]} rotation-y={ry}>
           <planeGeometry args={[26, 2.35]} />
@@ -286,7 +291,7 @@ export function World() {
         const side = Math.floor(i / 11);
         const t = -13 + (i % 11) * 2.6;
         const pos: [number, number, number] =
-          side === 0 ? [t, 1.25, -13] : side === 1 ? [t, 1.25, 13] : side === 2 ? [-13, 1.25, t] : [13, 1.25, t];
+          side === 0 ? [t, 1.25, -13] : side === 1 ? [t, 1.25, 13] : side === 2 ? [-16, 1.25, t] : [16, 1.25, t];
         return (
           <mesh key={i} position={pos} castShadow>
             <cylinderGeometry args={[0.055, 0.055, 2.5, 6]} />
@@ -297,8 +302,8 @@ export function World() {
       {[
         [0, -13, 0],
         [0, 13, 0],
-        [-13, 0, Math.PI / 2],
-        [13, 0, Math.PI / 2],
+        [-16, 0, Math.PI / 2],
+        [16, 0, Math.PI / 2],
       ].map(([x, z, ry], i) => (
         <mesh key={i} position={[x, 2.42, z]} rotation-y={ry as number} rotation-z={Math.PI / 2}>
           <cylinderGeometry args={[0.04, 0.04, 26, 6]} />
@@ -310,9 +315,10 @@ export function World() {
 
       {/* ── Trees: hugged to the fence line, clear of every court ── */}
       <SwayTree pos={[-12.0, 0, -7.2]} s={1.25} phase={4.0} />
-      <SwayTree pos={[12.0, 0, -7.2]}  s={1.15} phase={1.0} />
+      {/* NE tree moved clear of the new basketball court */}
+      <SwayTree pos={[12.4, 0, -1.5]} s={1.15} phase={1.0} />
       <SwayTree pos={[-12.2, 0, 11.4]} s={1.10} phase={0.4} />
-      <SwayTree pos={[12.2, 0, 11.4]}  s={1.20} phase={2.5} />
+      <SwayTree pos={[12.2, 0, 11.4]} s={1.20} phase={2.5} />
 
       {/* ── Playground equipment: far south corners ── */}
       <SwingSet pos={[-8.8, 0, 12.0]} />
@@ -382,6 +388,27 @@ export function World() {
         <meshStandardMaterial color="#d8342c" roughness={0.45} />
       </mesh>
 
+      {/* ── Loose gear: soccer ball + spare basketball ── */}
+      <mesh castShadow position={[-2.2, 0.17, 11.2]}>
+        <sphereGeometry args={[0.17, 16, 16]} />
+        <meshStandardMaterial color="#f2f4f8" roughness={0.5} />
+      </mesh>
+      <mesh castShadow position={[12.0, 0.18, 6.4]}>
+        <sphereGeometry args={[0.18, 16, 16]} />
+        <meshStandardMaterial color="#e2711d" roughness={0.5} />
+      </mesh>
+      {/* trash can beside the fountain */}
+      <group position={[12.6, 0, 1.9]}>
+        <mesh castShadow position={[0, 0.42, 0]}>
+          <cylinderGeometry args={[0.24, 0.2, 0.84, 14]} />
+          <meshStandardMaterial color="#4f5a66" metalness={0.45} roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.9, 0]}>
+          <cylinderGeometry args={[0.26, 0.24, 0.06, 14]} />
+          <meshStandardMaterial color="#3a434e" metalness={0.5} roughness={0.4} />
+        </mesh>
+      </group>
+
       {/* ── Water fountain: east fence, between the courts ── */}
       <group position={[12.2, 0, 0.5]}>
         <mesh castShadow position={[0, 0.45, 0]}>
@@ -394,12 +421,11 @@ export function World() {
         </mesh>
       </group>
 
-      {/* ── Recess extras: hopscotch, double-dutch, and the fence crowd ── */}
-      <Hopscotch />
+      {/* ── Recess extras: double-dutch and the fence crowd ── */}
       <JumpRope />
       <Crowd />
 
-      <Leaves />
+      {particles && <Leaves />}
     </group>
   );
 }

@@ -7,6 +7,7 @@ import { Ball } from "./Ball";
 import { Rig } from "./Rig";
 import { Director } from "./Director";
 import { Atmosphere } from "./Atmosphere";
+import { useSettings } from "../game/settings";
 import { RT, type Burst } from "../game/refs";
 import { makeBurstTexture } from "../game/textures";
 import type { EntityId } from "../game/constants";
@@ -61,6 +62,8 @@ function Bursts() {
 }
 
 export function Scene() {
+  // Hit-burst stars are "FX" — honour the particles toggle.
+  const particles = useSettings((s) => s.particles);
   return (
     <>
       <Atmosphere />
@@ -71,7 +74,7 @@ export function Scene() {
       {IDS.map((id) => (
         <Rig key={id} id={id} />
       ))}
-      <Bursts />
+      {particles && <Bursts />}
       <Director />
     </>
   );

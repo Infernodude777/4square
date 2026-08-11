@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useGame, type Popup } from "../../game/store";
+import { useGame, visiblePopups, type Popup } from "../../game/store";
+import { useSettings } from "../../game/settings";
 import { KS } from "./kickballState";
 import { ballInWindow, plateProgress, BASE_DIST } from "../../game/kickball";
 
@@ -33,7 +34,7 @@ function Popups() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-[28%]">
       <div className="flex flex-col-reverse items-center gap-1">
-        {popups.slice(-3).map((p) => <PopupItem key={p.id} p={p} />)}
+        {visiblePopups(popups).map((p) => <PopupItem key={p.id} p={p} />)}
       </div>
     </div>
   );
@@ -126,20 +127,53 @@ function Banner() {
   );
 }
 
-// ── Controls + quit ────────────────────────────────────────────
-function Corner() {
+// ── Settings gear + mute + pause ─────────────────────────────
+function SettingsBtn() {
+  const muted = useSettings((s) => s.muted);
+  const toggle = useSettings((s) => s.toggleMute);
   const toMenu = useGame((s) => s.toMenu);
+  const setPaused = useGame((s) => s.setPaused);
+  const [open, setOpen] = useState(false);
   return (
-    <div className="pointer-events-auto absolute right-5 top-5 flex flex-col items-end gap-2">
+    <div className="pointer-events-auto absolute right-5 top-5 flex items-center gap-2">
       <button
-        onClick={toMenu}
-        className="rounded-xl border border-white/15 bg-[#0d1219]/80 px-3 py-1.5 text-[11px] font-bold text-white/60 backdrop-blur-sm hover:bg-white/10"
+        onClick={toggle}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        title={muted ? "Unmute" : "Mute"}
       >
-        QUIT
+        {muted ? "🔇" : "🔊"}
       </button>
-      <div className="rounded-xl border border-white/12 bg-[#0d1219]/75 p-3 text-right text-[10px] font-bold leading-snug text-white/45 backdrop-blur-sm">
-        CLICK = kick<br />RIGHT-CLICK = bunt
-      </div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        title="Kickball rules"
+      >
+        ⚙️
+      </button>
+      <button
+        onClick={() => setPaused(true)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-base backdrop-blur-sm transition hover:bg-white/10"
+        title="Pause (ESC)"
+      >
+        ⏸
+      </button>
+      {open && (
+        <div className="absolute right-0 top-12 z-30 w-72 animate-cardin rounded-2xl border border-white/15 bg-[#0d1219]/96 p-4 backdrop-blur-md">
+          <div className="mb-2 font-display text-xs tracking-[0.25em] text-white/65">KICKBALL RULES</div>
+          <div className="space-y-0.5 text-[10px] font-bold text-white/55">
+            <div>✗ CLICK when the pitch crosses the plate → kick for power</div>
+            <div>✗ RIGHT-CLICK → soft bunt, easier to time</div>
+            <div>✗ Run the bases off your hit — 3 innings, most runs wins</div>
+            <div className="text-[#7dff9a]">▲ Kick in the green zone on the meter</div>
+          </div>
+          <button
+            onClick={() => { setOpen(false); toMenu(); }}
+            className="mt-3 w-full rounded-xl bg-white/10 py-2 text-xs font-bold text-white/60 transition hover:bg-white/20"
+          >
+            BACK TO PLAYGROUND
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -150,7 +184,7 @@ export function KickballHUD() {
       <Scoreboard />
       <KickMeter />
       <Banner />
-      <Corner />
+      <SettingsBtn />
       <Popups />
       <div className="pointer-events-none absolute bottom-2 right-3 text-[9px] font-bold tracking-widest text-white/25">
         {Math.round(BASE_DIST)} m bases · 3 innings · most runs wins

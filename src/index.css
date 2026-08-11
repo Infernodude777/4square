@@ -8,6 +8,7 @@
   --animate-cardin: cardin 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   --animate-badgein: badgein 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   --animate-fadein: fadein 0.3s ease-out both;
+  --animate-wiggle: wiggle 0.5s ease-in-out both;
 }
 
 html,
@@ -85,6 +86,18 @@ body {
   }
 }
 
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3deg) scale(1.04);
+  }
+  75% {
+    transform: rotate(3deg) scale(1.04);
+  }
+}
+
 .confetti-piece {
   position: absolute;
   top: -24px;
@@ -115,4 +128,66 @@ body {
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0 3px, transparent 3px 6px),
     rgba(22, 44, 38, 0.88);
   backdrop-filter: blur(5px);
+}
+
+/* ── Season 2: robot speech bubbles ────────────────────────── */
+/* Chalk-shout bubbles the robots pop over their heads (Rig + refs.setEmote). */
+.emote-bubble {
+  position: relative;
+  background: #fdfaf2;
+  color: #1a2740;
+  font-family: "Nunito", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1.15;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid #8a6a10;
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  max-width: 240px;
+  animation: emotein 0.25s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.emote-tail {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top-color: #fdfaf2;
+  border-bottom: none;
+}
+
+@keyframes emotein {
+  0% {
+    transform: translateY(10px) scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Respect reduced-motion preferences (P1-2): no confetti rain, no
+   pop/bounce/card animations — the game stays fully playable, just calmer. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .confetti-piece {
+    display: none !important;
+  }
+  .emote-bubble {
+    animation: none !important;
+  }
 }

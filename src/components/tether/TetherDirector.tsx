@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame } from "../../game/store";
 import { sfx } from "../../game/audio";
+import { say } from "../../game/banter";
 import { skillFactor, botReactionFactor, useSettings } from "../../game/settings";
 import {
   beginServe,
@@ -177,6 +178,7 @@ export function TetherDirector() {
         input.hitQ.shift();
         releaseServe(t, "player", 1);
         sfx.hit(0.75);
+        if (Math.random() < 0.3) say("serve");
         break;
       }
     } else if (t.serveStage === "op-hold") {
@@ -184,6 +186,7 @@ export function TetherDirector() {
       if (t.time >= t.opServeAt) {
         releaseServe(t, "op", -1);
         sfx.hit(0.75);
+        if (Math.random() < 0.3) say("serve");
       }
     } else {
       // ── LIVE PHYSICS ─────────────────────────────────────────────
@@ -215,7 +218,7 @@ export function TetherDirector() {
             res.kind === "dink"    ? "green"  :
             res.kind === "mistime" ? "red"    : "white";
           st.popup(res.kind === "mistime" ? "TOO EARLY!" : `${def.name}!`, tone as never);
-          if (res.perfect) st.popup("PERFECT TIMING", "gold", true);
+          if (res.perfect) { st.popup("PERFECT TIMING", "gold", true); say("perfect", "gold"); }
           sfx.hit(res.quality);
           if (res.kind === "smash")   sfx.smash();
           if (res.kind === "skimmer") sfx.skimmer();
@@ -248,6 +251,7 @@ export function TetherDirector() {
         if (winTimer.current === null) {
           const pWins = t.wraps > 0;
           st.popup(pWins ? "WRAP! YOU WIN! 🏆" : "WRAPPED OUT — YOU LOSE", pWins ? "gold" : "red", true);
+          say(pWins ? "win" : "lose", pWins ? "gold" : "red", true);
           if (pWins) { st.addScore(10); sfx.win(); } else sfx.fault();
           st.setPhase("point");
           winTimer.current = window.setTimeout(() => {
@@ -301,11 +305,13 @@ export function TetherDirector() {
       kind === "carry"   ? "CARRY"         : "OFF-SIDES";
     if (who === "player") {
       st.popup(`FOUL · ${lbl}`, "red", true);
+      say("fault", "red");
       st.addScore(-2);
       sfx.fault();
       resetTether(); beginServe(TS.current, "op");
     } else {
       st.popup(`BOT FOUL · ${lbl}`, "green");
+      if (Math.random() < 0.35) say("taunt");
       st.addScore(3);
       sfx.cheer();
       resetTether(); beginServe(TS.current, "player");

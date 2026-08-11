@@ -34,6 +34,7 @@
 
 import * as THREE from "three";
 import { sfx } from "./audio";
+import { say } from "./banter";
 
 // ── Court geometry ───────────────────────────────────────────
 export const WALL_Z       = 0;      // the wall face lives at z = 0
@@ -325,6 +326,10 @@ export function callFoul(t: WallState, offender: Side, foul: Foul) {
   if (offender === "player") t.opScore++;
   else t.playerScore++;
 
+  // The yard has opinions about every point.
+  if (offender === "player") { if (Math.random() < 0.7) say("fault", "red"); }
+  else if (Math.random() < 0.3) say("taunt");
+
   // Winner of the point serves the next one.
   t.server = other(offender);
   sfx.fault();
@@ -354,6 +359,7 @@ export function beginServe(t: WallState, who: Side) {
   t.banner = who === "player" ? "YOUR SERVE" : "ZIGGY SERVES";
   t.bannerSub = who === "player" ? "click to strike it into the wall" : "";
   t.bannerAt = t.time;
+  if (Math.random() < 0.3) say("serve");
 }
 
 // ── Striking the ball ────────────────────────────────────────

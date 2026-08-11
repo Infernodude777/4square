@@ -26,8 +26,9 @@
 
 import * as THREE from "three";
 import { sfx } from "./audio";
-import { botInningRuns, pitchSpeed } from "./settings";
 import { checkBadges } from "./achievements";
+import { say } from "./banter";
+import { botInningRuns, pitchSpeed, useSettings } from "./settings";
 
 // ── Field geometry ───────────────────────────────────────────
 export const K_BALL_R     = 0.17;
@@ -183,7 +184,10 @@ function addStrike(k: KickState) {
     out: k.strikes >= 3,
     msg: k.strikes >= 3 ? "STRIKE THREE!" : "STRIKE",
   };
-  if (k.strikes >= 3) recordOut(k);
+  if (k.strikes >= 3) {
+    if (Math.random() < 0.6) say("fault", "red");
+    recordOut(k);
+  }
 }
 
 // ── The big step ─────────────────────────────────────────────
@@ -335,6 +339,7 @@ function resolveContact(k: KickState, bunt: boolean) {
     startRunner(k, 4);
     checkBadges({ kind: "homerun" });
     sfx.homerun();
+    say("perfect", "gold", true);
     k.shake = 0.8;
     return;
   }
@@ -378,7 +383,10 @@ function resolveContact(k: KickState, bunt: boolean) {
   enterLive(k);
   startRunner(k, bases);
   if (out) sfx.fault();
-  else sfx.cheer();
+  else {
+    sfx.cheer();
+    if (Math.random() < 0.2) say("taunt");
+  }
 }
 
 /** Solve a ballistic launch that lands on `land` after ~0.85 s. */
@@ -615,6 +623,9 @@ function advanceBases(k: KickState) {
   k.strikes = 0;   // at-bat over (runner on base) → fresh count next batter
   if (target >= 4) {
     k.runsYou += 1;
+    // Lifetime kickball runs (shown in the settings panel).
+    const settings = useSettings.getState();
+    settings.patchStats({ totalRuns: settings.stats.totalRuns + 1 });
     k.outcome = { kind: "homerun", bases: 4, out: false, msg: "RUN SCORED!" };
     k.banner = "RUN!";
     k.bannerSub = "you scored";
@@ -633,6 +644,7 @@ function advanceBases(k: KickState) {
 }
 
 function recordOut(k: KickState) {
+  if (Math.random() < 0.35) say("taunt");
   k.outs += 1;
   k.strikes = 0;   // batter retired → next batter starts a fresh count
   k.banner = k.outcome?.msg ?? "OUT";
