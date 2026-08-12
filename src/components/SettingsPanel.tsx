@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSettings, DIFFICULTY_INFO, RETICLE_INFO, QUALITY_INFO, formatRecord, type Difficulty, type ReticleStyle, type Quality } from "../game/settings";
 import { useGame, type Mode } from "../game/store";
+import { Icon } from "./Icons";
 
 const MODE_ORDER: Mode[] = [
   "foursquare", "tetherball", "wallball", "tag", "kickball",
@@ -31,10 +32,10 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <div className="font-display text-lg tracking-widest text-[#ffd23e]">BLACKTOP SETTINGS</div>
           <button
             onClick={onClose}
-            className="rounded-lg bg-white/10 px-3 py-1 text-xs font-bold text-white/70 hover:bg-white/20"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/70 transition hover:bg-white/20"
             aria-label="Close settings"
           >
-            ✕
+            <Icon name="x" size={14} />
           </button>
         </div>
 
@@ -136,16 +137,17 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* toggles */}
+        {/* toggles — Season 3: words instead of emoji stickers */}
         <div className="mb-4 flex gap-2">
-          <button onClick={toggleMute} className={`flex-1 rounded-xl border-2 px-3 py-2 text-[11px] font-bold transition ${muted ? "border-[#ff6b5e] bg-[#ff6b5e]/15 text-[#ff6b5e]" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}>
-            {muted ? "🔇 MUTED" : "🔊 SOUND ON"}
+          <button onClick={toggleMute} className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2 text-[11px] font-bold transition ${muted ? "border-[#ff6b5e] bg-[#ff6b5e]/15 text-[#ff6b5e]" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}>
+            <Icon name={muted ? "speakerOff" : "speaker"} size={14} />
+            {muted ? "MUTED" : "SOUND ON"}
           </button>
           <button onClick={toggleShake} className={`flex-1 rounded-xl border-2 px-3 py-2 text-[11px] font-bold transition ${screenShake ? "border-[#57d977] bg-[#57d977]/15 text-[#57d977]" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}>
-            {screenShake ? "📳 SHAKE ON" : "📴 SHAKE OFF"}
+            {screenShake ? "SHAKE ON" : "SHAKE OFF"}
           </button>
           <button onClick={toggleParticles} className={`flex-1 rounded-xl border-2 px-3 py-2 text-[11px] font-bold transition ${particles ? "border-[#b58cff] bg-[#b58cff]/15 text-[#b58cff]" : "border-white/10 bg-white/5 text-white/60 hover:bg-white/10"}`}>
-            {particles ? "✨ FX ON" : "🚫 FX OFF"}
+            {particles ? "FX ON" : "FX OFF"}
           </button>
         </div>
 
@@ -205,6 +207,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             <span>Catches · {stats.totalCatch}</span>
             <span>Swishes · {stats.totalSwishes}</span>
             <span>Kickball runs · {stats.totalRuns}</span>
+            <span>Bells · {stats.bellsHeard}</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
             {MODE_ORDER.filter((m) => (modePlays[m] ?? 0) > 0).map((m) => (

@@ -1,55 +1,66 @@
-# RECESS ROYALE — Season 2 Plan (v3)
+# RECESS ROYALE — Season 3 Plan (v4)
 
 **Project:** Four Square: Recess Royale — Three.js / react-three-fiber 3D schoolyard game.
 **Scope:** 10 playable modes, free-roam hub, persisted settings, badge wall, daily challenge.
-**Audit date:** 2026-08-10 · **Previous passes:** v1 bug-fix + 9-court merge (basketball, dodgeball,
-gaga, hopscotch) + banter/daily-reward/settings/polish + v2 production-readiness pass (title screen,
-error boundary, loading screen, per-mode records, debounced persistence, auto-pause, reduced-motion)
-— all landed and verified (`tsc` clean, `vite build` clean, `npx vitest run` 39/39).
+**Audit date:** 2026-08-11 · **Previous passes:** v1 bug-fix + 9-court merge; v2 production pass
+(title screen, error boundary, per-mode records, debounced persistence, auto-pause); Season 2
+(recess radio, school-day sky, photo mode, blacktop ranks, robot speech bubbles, red-light lane,
+hub props, settings depth) — all landed and verified (`tsc` clean, `vite build` clean, vitest green).
 
-Season 2 is the **make-it-sing** pass: a real soundtrack, a living schoolyard, a photo mode,
-progress depth (ranks + win rates), robots that talk back, and a brand-new tenth court.
+Season 3 is **the day the yard got a heartbeat**: a real school bell that rings at 3 PM and
+celebrates, house rules the king calls on the foursquare court, a chalk wall that remembers your
+marks, and a hand-drawn chalk & duct-tape voice that pushes the emoji stickers out of the UI chrome.
 
 ---
 
-## 1. What Landed (v2 recap)
+## 1. What Landed (v2 + S2 recap)
 
 - P0 fixes: honest per-mode records (`RECORD_META`), hub settings gear, error boundary, loading
   screen, auto-pause on blur, debounced persistence, audio gesture gate.
 - P1: title screen + `hasStarted`, reduced-motion + touch-action + aria-labels, WebGL context-loss
   recovery, vitest suites for the merged modes, README.
 - P2: Victory confetti cap + vignette, HUD popover outside-close, vibration on big plays.
+- Season 2: recess radio, school-day sky (24-min loop), photo mode, blacktop ranks, win rates,
+  speech bubbles, Red Light Green Light (the tenth court), hub props + east strip, settings depth.
 
----
-
-## 2. Season 2 — Feature Registry
+## 2. Season 3 — Feature Registry
 
 | ID | Feature | Where | Notes |
 |----|---------|-------|-------|
-| S2-1 | **Recess radio** — procedural WebAudio soundtrack | `game/music.ts` | Seeded daily tune, mood-driven tempo (hub/play/point), SFX ducking, own gain bus for the music volume slider |
-| S2-2 | **School-day sky** — one shared clock across every scene | `game/atmosphere.ts`, `Atmosphere.tsx` | 24-minute loop: morning → noon → golden hour → dusk → night; palette keyframes drive background, fog, sun tint, ambient; stars fade in after dusk; hub gets a matching `<Sky/>` |
-| S2-3 | **Photo mode** — orbit camera + PNG download | `PhotoMode.tsx`, `App.tsx` | `F` in the hub; drag orbit, scroll zoom, `H` hide HUD, SAVE writes a canvas snapshot |
-| S2-4 | **Blacktop ranks** | `game/rank.ts` | DODO → CHALKER → COURT ACE → COURT KING; per-court rank on the Victory card, live chip on the foursquare HUD, overall rank banner in the Hall of Fame |
-| S2-5 | **Win rates + per-mode wins** | `settings.ts` (`stats.modeWins`), `HallOfFame.tsx` | Every win tallies per mode; the wall shows `wins/plays · %` chips |
-| S2-6 | **Robot speech bubbles** | `refs.ts` (`setEmote`), `store.ts` reactions, `Rig.tsx`, CSS | Chalk bubbles over bot heads on perfects, KOs, wins |
-| S2-7 | **Red Light, Green Light** — the tenth court | `game/redlight.ts` + `components/redlight/*` + tests | Best-of-three lane race vs REX, ZIGGY, ADA; hearts on red faults; difficulty-scaled bot reactions; new badge (LIGHT RUNNER), record (rounds won), daily goal |
-| S2-8 | **Hub props + east strip** | `components/hub/Props.tsx`, `World.tsx`, `colliders.ts`, `constants.ts` | Fence extends east; monkey bars, picnic table, bushes, flower beds, lamp posts (glow at night) |
-| S2-9 | **Settings depth** | `SettingsPanel.tsx` | Radio volume slider + visuals preset (low/medium/high → dpr + shadows) |
-| S2-10 | **New badges** | `achievements.ts` | redlight-win, plus 5 Season 2 secrets (full-roster refresh, sweeps, lifer/marathon already in) |
+| S3-1 | **The Last Bell** — the school day is a clock | `game/bells.ts` (new), `BellClock.tsx`, `App.tsx`, `achievements.ts`, `settings.ts`, `music.ts` | Pure bell schedule (periods, wall clock, countdown); hub clock chip; at 3:00 PM the bell rings — long bell SFX, confetti, fresh daily tune, SCHOOL'S OUT badge, OVERTIME +50 if mid-match, `stats.bellsHeard` |
+| S3-2 | **King's Rules** — foursquare house rules | `game/rules.ts` (new), `logic.ts`, `store.ts`, `HUD.tsx`, `banter.ts` | Before every serve the king calls a rule: NO SMASHING / NO DROPS (banned strokes = out), DOUBLE POINTS, BOT CHARGE. Pure + tested |
+| S3-3 | **The Chalk Wall** — leave your mark | `game/graffiti.ts` (new), `Screens.tsx`, `GraffitiWall.tsx` | Victory card gains a chalk-input; the six newest marks show on a duct-taped board in the hub. Persisted to localStorage |
+| S3-4 | **Chalk & duct-tape voice** | `Icons.tsx` (new), `index.css`, textures.ts, and every UI-chrome component | Hand-drawn stroke SVG icons replace emoji in buttons/labels; hand-drawn star emblem + chalk crown replace emoji glyphs in canvas textures; wall-board + tape-corner CSS. Badges/ranks keep emoji on purpose — that's content, not chrome |
+| S3-5 | **Fixes & copy** | `TitleScreen.tsx`, `plan.md`, `README.md` | "Nine courts" → "Ten courts"; docs updated |
 
-## 3. Design Rules (carried from v2)
+## 3. Design Rules (carried forward)
 
 - **The game's voice** is warm, chalk-dusty and recess-y: every new screen and bubble should look
   hand-drawn on a schoolyard, not grey UI.
 - Keep the two-store boundary: `useGame` = match, `useSettings` = persistence. New persisted flags
-  (`musicVolume`, `quality`, `stats.modeWins`) belong in `useSettings` with a version bump.
+  (`stats.bellsHeard`) belong in `useSettings` with a version bump (v4 → v5).
 - Single source of truth: record units in `RECORD_META`, rank tiers in `rank.ts`, entry radii in
-  `hub/constants.ts`. Every display reads the same table.
-- Pure logic stays pure: `redlight.ts` owns all rules; the director only forwards input + events.
+  `hub/constants.ts`, the bell schedule in `bells.ts`, the house rules in `rules.ts`.
+- Pure logic stays pure: `bells.ts` / `rules.ts` / `graffiti.ts` own all rules; directors and the
+  App only forward input + events. Every new pure module ships with a vitest suite.
 - All overlays share the existing patterns: `animate-cardin`, chalkboard/`#10141c` surfaces,
   `#ffd23e` gold accents, ESC/backdrop close.
 
 ## 4. Verification
 
-`npx tsc --noEmit` · `npx vitest run` (39 + redlight + tetherball-flake fixes) · `npm run build` ·
-browser smoke test (title → hub → enter the red-light lane → photo mode → settings) · update statuses.
+`npx tsc --noEmit` · `npx vitest run` (existing suites + bells + rules + graffiti) · `npm run build` ·
+browser smoke test (title → hub clock → enter foursquare under a king's rule → win → chalk a mark →
+bell celebration → photo mode → settings) · update statuses.
+
+## 5. Season 3 Checklist
+
+- [ ] `bells.ts` + tests: periods, wall clock, countdown, wrap
+- [ ] `rules.ts` + tests: bans, score/bot multipliers, pick/keep
+- [ ] `graffiti.ts` + tests: sanitise, cap, wipe
+- [ ] Bell wired in `App.tsx` (interval, once-per-day, overtime bonus)
+- [ ] `BellClock` chip in the hub; bells stat in Settings + Hall of Fame
+- [ ] King's rule enforcement in `logic.ts` (player + bots + scoring)
+- [ ] RuleChip in the foursquare HUD; rule banter lines
+- [ ] Chalk icons across the UI chrome; texture emoji → drawn art
+- [ ] Graffiti input on Victory + chalk wall in the hub
+- [ ] `tsc` / `vitest` / `vite build` all green

@@ -126,4 +126,28 @@ describe("settings persistence (M3/M4)", () => {
     expect(s.highScores.foursquare).toBe(25);
     expect(s.highScores.hopscotch).toBeUndefined();
   });
+
+  it("migrates v4 storage and counts bells heard (Season 3)", async () => {
+    localStorage.setItem(
+      NAME,
+      JSON.stringify({
+        state: { stats: { gamesPlayed: 2 } },
+        version: 4,
+      }),
+    );
+
+    const { useSettings } = await import("../settings");
+    await settle();
+    const s = useSettings.getState();
+    // The new stat defaults to 0 for a pre-Season-3 store.
+    expect(s.stats.bellsHeard).toBe(0);
+
+    // noteBell bumps the stat and fires the badge checks without crashing.
+    s.noteBell(true);
+    expect(useSettings.getState().stats.bellsHeard).toBe(1);
+    const { useBadges } = await import("../achievements");
+    await settle();
+    expect(useBadges.getState().unlocked).toContain("schools-out");
+    expect(useBadges.getState().unlocked).toContain("overtime");
+  });
 });

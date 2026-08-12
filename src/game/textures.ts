@@ -165,6 +165,10 @@ export function makeCourtTexture(): THREE.CanvasTexture {
   g.fillStyle = "rgba(120,220,255,0.35)";
   g.font = `700 ${S * 0.024}px "Comic Sans MS", cursive`;
   g.fillText("ADA smells like rust →", P(0.4), P(1.6));
+  // Season 3: someone already chalked up the field day
+  g.fillStyle = "rgba(255,240,180,0.3)";
+  g.font = `700 ${S * 0.022}px "Comic Sans MS", cursive`;
+  g.fillText("field day 3.0 →", P(-0.2), P(-3.9));
 
   return tex(c);
 }
@@ -239,6 +243,10 @@ export function makeBrickTexture(): THREE.CanvasTexture {
   return tex(c, [4, 2]);
 }
 
+// ── the school sign ─────────────────────────────────────────────
+// Season 3: no emoji glyphs on the blacktop — a hand-drawn star
+// emblem and stencilled lettering instead (emoji fonts can render
+// as tofu on some machines, and a star is just more honest).
 export function makeSignTexture(): THREE.CanvasTexture {
   const c = canvas(1024, 192);
   const g = c.getContext("2d")!;
@@ -247,11 +255,35 @@ export function makeSignTexture(): THREE.CanvasTexture {
   g.strokeStyle = "#e8b93c";
   g.lineWidth = 10;
   g.strokeRect(10, 10, 1004, 172);
+
+  // five-point star emblem
+  g.save();
+  g.translate(150, 96);
+  g.fillStyle = "#e8b93c";
+  g.beginPath();
+  for (let i = 0; i <= 10; i++) {
+    const r = i % 2 === 0 ? 52 : 22;
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    g[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  g.closePath();
+  g.fill();
+  g.fillStyle = "#f4f1e8";
+  g.beginPath();
+  for (let i = 0; i <= 10; i++) {
+    const r = i % 2 === 0 ? 26 : 11;
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    g[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  g.closePath();
+  g.fill();
+  g.restore();
+
   g.fillStyle = "#f4f1e8";
   g.font = '900 84px "Arial Black", system-ui, sans-serif';
   g.textAlign = "center";
   g.textBaseline = "middle";
-  g.fillText("🦅 FALCON ELEMENTARY", 512, 104);
+  g.fillText("FALCON ELEMENTARY", 610, 104);
   return tex(c);
 }
 
@@ -318,7 +350,8 @@ export function makeBallTexture(): THREE.CanvasTexture {
 }
 
 // ── name tag sprite ─────────────────────────────────────────────
-// Simple pill: coloured left bar + name (bold, white) + role (small, muted)
+// Simple pill: coloured left bar + name (bold, white) + role (small, muted).
+// Season 3: the king's crown is drawn by hand instead of an emoji glyph.
 export function makeNameTag(name: string, color: string, label: string, isKing: boolean, _isPlayer: boolean): THREE.CanvasTexture {
   const W = 220, H = 56;
   const c = canvas(W, H);
@@ -338,11 +371,20 @@ export function makeNameTag(name: string, color: string, label: string, isKing: 
   g.fillRect(0, 0, 8, H);
   g.restore();
 
-  // Crown (king badge) on the right
+  // Crown (king badge) on the right — a hand-drawn chalk crown
   if (isKing) {
-    g.font = "22px sans-serif";
-    g.textBaseline = "middle";
-    g.fillText("👑", W - 24, H * 0.38);
+    g.fillStyle = "#ffd23e";
+    g.beginPath();
+    g.moveTo(W - 40, H * 0.52);
+    g.lineTo(W - 40, H * 0.38);
+    g.lineTo(W - 31, H * 0.46);
+    g.lineTo(W - 24, H * 0.32);
+    g.lineTo(W - 17, H * 0.46);
+    g.lineTo(W - 8, H * 0.38);
+    g.lineTo(W - 8, H * 0.52);
+    g.closePath();
+    g.fill();
+    g.fillRect(W - 40, H * 0.52, 32, 3.5);
   }
 
   // Name — large, white

@@ -9,6 +9,7 @@
   --animate-badgein: badgein 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   --animate-fadein: fadein 0.3s ease-out both;
   --animate-wiggle: wiggle 0.5s ease-in-out both;
+  --animate-chalkpop: chalkpop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 
 html,
@@ -98,6 +99,18 @@ body {
   }
 }
 
+/* Season 3 — a little pop for chalk chips and rule cards */
+@keyframes chalkpop {
+  0% {
+    transform: translateY(6px) scale(0.6) rotate(-2deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
 .confetti-piece {
   position: absolute;
   top: -24px;
@@ -172,6 +185,30 @@ body {
     transform: translateY(0) scale(1);
     opacity: 1;
   }
+}
+
+/* ── Season 3: chalk & duct-tape voice ─────────────────────── */
+/* The chalk wall — the little board that remembers your marks. */
+.wall-board {
+  background:
+    radial-gradient(400px 160px at 20% -10%, rgba(255, 255, 255, 0.06), transparent 55%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 5px),
+    rgba(24, 42, 36, 0.92);
+  border: 2px solid rgba(245, 237, 200, 0.35);
+}
+
+/* A torn strip of school-hall duct tape on a card corner. */
+.tape-corner {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 64px;
+  height: 18px;
+  background: rgba(232, 214, 150, 0.75);
+  border-left: 1px dashed rgba(160, 140, 90, 0.5);
+  border-right: 1px dashed rgba(160, 140, 90, 0.5);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* Respect reduced-motion preferences (P1-2): no confetti rain, no

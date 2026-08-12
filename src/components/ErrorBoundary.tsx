@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { Icon } from "./Icons";
 
 /**
  * Last line of defence (P0-3): a crash anywhere in the 3D tree must never
@@ -22,7 +23,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
       return (
         <div className="flex h-dvh w-screen items-center justify-center bg-[#8fbfe0] font-body">
           <div className="chalkboard mx-4 w-full max-w-md rounded-3xl border-4 border-[#f5edc8]/60 p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
-            <div className="text-5xl">🛝</div>
+            <div className="flex justify-center text-[#ffd23e]">
+              <Icon name="bell" size={44} />
+            </div>
             <div className="mt-3 font-display text-3xl text-[#ffd23e]" style={{ textShadow: "0 3px 0 rgba(0,0,0,0.55)" }}>
               RECESS RAN AFOUL
             </div>

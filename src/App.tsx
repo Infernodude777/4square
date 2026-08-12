@@ -32,11 +32,14 @@ import { TitleScreen } from "./components/TitleScreen";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { Sky } from "./components/Sky";
 import { PhotoCamera, PhotoBar } from "./components/PhotoMode";
+import { Icon } from "./components/Icons";
 import { useGame } from "./game/store";
 import { useSettings } from "./game/settings";
 import { setVolume, setMuted, unlockAudio, ambientStart, bell } from "./game/audio";
-import { musicStart, musicStop, setMusicMood, musicDuck } from "./game/music";
+import { musicStart, musicStop, setMusicMood, musicDuck, musicNewDay } from "./game/music";
 import { todayKey } from "./game/daily";
+import { dayFraction } from "./game/atmosphere";
+import { bellRang } from "./game/bells";
 
 export default function App() {
   const phase = useGame((s) => s.phase);
@@ -163,6 +166,36 @@ export default function App() {
     }
     prevDaily.current = { key: dailyKey, done: nowDone };
   }, [dailyDone, dailyKey]);
+
+  // ── Season 3 — THE LAST BELL ──────────────────────────────
+  // When the 3:00 PM school bell rings, the yard celebrates: a long bell,
+  // confetti, a fresh daily tune, a SCHOOL'S OUT badge — and if a match is
+  // live, an OVERTIME +50 bonus for the player brave enough to keep playing
+  // past the bell. bellRang() handles the day wrap, so this fires exactly
+  // once per school day.
+  const bellFired = useRef(false);
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const f = dayFraction();
+      if (bellRang(f)) {
+        if (bellFired.current) return;
+        bellFired.current = true;
+        bell();
+        musicNewDay();
+        setCelebrate(Date.now());
+        const g = useGame.getState();
+        const overtime = g.phase === "play" || g.phase === "point";
+        if (overtime) {
+          g.addScore(50);
+          g.popup("OVERTIME +50 — SCHOOL'S OUT!", "gold", true);
+        }
+        useSettings.getState().noteBell(overtime);
+      } else {
+        bellFired.current = false;
+      }
+    }, 400);
+    return () => clearInterval(iv);
+  }, []);
 
   // Global pause: ESC or P toggles the pause menu during a match.
   useEffect(() => {
@@ -314,7 +347,9 @@ export default function App() {
       {(glLost || stuck) && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#0d1219]/85 font-body backdrop-blur-sm">
           <div className="chalkboard mx-4 w-full max-w-sm rounded-3xl border-4 border-[#f5edc8]/60 p-8 text-center">
-            <div className="text-5xl">📺</div>
+            <div className="flex justify-center text-[#d9efe8]/80">
+              <Icon name="photo" size={44} />
+            </div>
             <div className="mt-3 font-display text-2xl text-[#ffd23e]">SCREEN BLANKED OUT</div>
             <p className="mt-2 text-xs font-bold text-[#d9efe8]/80">
               The playground TV lost its signal. A quick reload brings recess right back.
@@ -356,7 +391,7 @@ function CameraAnchor({ pos }: { pos: [number, number, number] }) {
   return null;
 }
 
-/* ── one-shot confetti burst (daily complete) ───────────────── */
+/* ── one-shot confetti burst (daily complete / last bell) ──── */
 function ConfettiBurst({ onDone }: { onDone: () => void }) {
   const pieces = useMemo(
     () =>

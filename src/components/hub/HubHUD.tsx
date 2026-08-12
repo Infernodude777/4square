@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { RT } from "../../game/refs";
 import { DailyCard } from "../DailyCard";
 import { HallOfFame } from "../HallOfFame";
+import { Icon } from "../Icons";
+import { BellClock } from "./BellClock";
+import { GraffitiWall } from "./GraffitiWall";
 import { FOUR_SQUARE_POS, TETHER_POS, WALL_POS, SWING_POS, TAG_POS, KICK_POS, BASKET_POS, GAGA_POS, DODGE_POS, HOPSCOTCH_POS, REDLIGHT_POS, ENTER_R, NEAR_ANY_R } from "./constants";
 
 type Near =
@@ -83,6 +86,9 @@ export function HubHUD({ onOpenSettings }: { onOpenSettings: () => void }) {
       {/* Today's recess special — pinned top-left while exploring the yard */}
       <DailyCard />
 
+      {/* Season 3 — the school clock, pinned top-centre */}
+      <BellClock />
+
       {/* Hall of Fame — records, badges & lifetime stats (top-right) */}
       <div className="pointer-events-auto absolute right-5 top-5 flex items-center gap-2">
         <button
@@ -91,15 +97,16 @@ export function HubHUD({ onOpenSettings }: { onOpenSettings: () => void }) {
           title="Hall of Fame — records, badges & stats"
           aria-label="Open Hall of Fame"
         >
-          🏅 HALL OF FAME
+          <Icon name="trophy" size={16} />
+          HALL OF FAME
         </button>
         <button
           onClick={onOpenSettings}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white/15 bg-[#10141c]/85 text-lg backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0 active:scale-95"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white/15 bg-[#10141c]/85 text-white/60 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/10 active:translate-y-0 active:scale-95"
           title="Settings — volume, music, difficulty & feel"
           aria-label="Open settings"
         >
-          ⚙️
+          <Icon name="gear" size={18} />
         </button>
       </div>
       {recordsOpen && <HallOfFame onClose={() => setRecordsOpen(false)} />}
@@ -120,6 +127,9 @@ export function HubHUD({ onOpenSettings }: { onOpenSettings: () => void }) {
           </div>
         )}
       </div>
+
+      {/* Season 3 — the chalk wall remembers every recess */}
+      <GraffitiWall />
     </div>
   );
 }

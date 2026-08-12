@@ -17,6 +17,7 @@ import { useGame } from "./store";
 import { sfx } from "./audio";
 import { skillFactor } from "./settings";
 import { say } from "./banter";
+import { isMoveBanned, pickRule, ruleBotMul, ruleName, ruleScoreMul, ruleSpeedMul } from "./rules";
 
 const g = () => useGame.getState();
 
@@ -65,6 +66,19 @@ export function startRally() {
   const ball = RT.ball;
   ball.curve = 0;
   ball.grounded = 0;
+
+  // Season 3 — KING'S RULES: before every serve the king calls a house
+  // rule. 40% of the time it keeps the standing one; otherwise it flips
+  // to something new, and the whole court hears about it. The banter line
+  // only joins in when the popup stack has room, so a rule flip never
+  // crowds out a knockout banner.
+  const prevRule = g().rule;
+  const nextRule = pickRule(prevRule);
+  if (nextRule !== prevRule) {
+    g().setRule(nextRule);
+    g().popup(`KING CALLS · ${ruleName(nextRule)}`, "gold");
+    if (g().popups.length < 2) say("rule", "white");
+  }
 
   // everyone drifts home
   (Object.keys(RT.entities) as EntityId[]).forEach((id) => {
@@ -131,6 +145,7 @@ export function resolveOut(loser: EntityId) {
 
   const youLost = loser === "player";
   const youCaused = leg.hitter === "player" && !youLost;
+  const mul = ruleScoreMul(g().rule); // Season 3: DOUBLE POINTS court
 
   if (youLost) {
     say("botKo", "red", true);
@@ -140,7 +155,7 @@ export function resolveOut(loser: EntityId) {
     RT.shake = 0.9;
   } else {
     if (youCaused) {
-      st.addScore(5);
+      st.addScore(5 * mul);
       st.registerKO();
       st.popup(`KNOCKOUT +5 · ${nameOf(loser)}`, "green", true);
       sfx.cheer();
@@ -187,7 +202,6 @@ export function onBounce(s: number | null, impact: number) {
       leg.serveBounced = true;
       if (leg.hitter === "player") {
         RT.serveStage = "armed";
-
       } else {
         const e = RT.entities[leg.hitter];
         e.serveTimer = RT.time + 0.22 + Math.random() * 0.2;
@@ -242,8 +256,6 @@ export function onBounce(s: number | null, impact: number) {
     if (recv && recv !== "player") {
       planBotReturn(recv, leg.move, impact);
       setFace(recv, "alert", 2.2);
-    } else if (recv === "player") {
-
     }
 
     // A clean exchange survived — count it, and let the bots call out
@@ -263,12 +275,13 @@ export function onBounce(s: number | null, impact: number) {
 }
 
 function st_addHitScore(perfect: boolean) {
+  const mul = ruleScoreMul(g().rule); // Season 3: DOUBLE POINTS court
   if (perfect) {
-    g().addScore(3);
+    g().addScore(3 * mul);
     g().popup("PERFECT! +3", "gold", true);
     sfx.perfect();
   } else {
-    g().addScore(1);
+    g().addScore(1 * mul);
     g().popup("+1", "white");
   }
 }
@@ -313,7 +326,8 @@ function planBotReturn(bot: Exclude<EntityId, "player">, incoming: MoveId, impac
   const def    = BOTS[bot];
   const e      = RT.entities[bot];
   const isKing = sqOf(bot, g().assign) === 4;
-  const skill  = Math.min(1, def.skill * skillFactor());
+  // Season 3: the standing house rule can pep the bots up.
+  const skill  = Math.min(1, def.skill * skillFactor() * ruleBotMul(g().rule));
 
   let missChance = 0.07 + (1 - skill) * 0.22;
   if (incoming === "skimmer") missChance += 0.07;
@@ -336,6 +350,8 @@ function planBotReturn(bot: Exclude<EntityId, "player">, incoming: MoveId, impac
   if (move === "smash" && ballY < 1.0) move = "drive";
   // King-mode escape lob under heavy spin
   if (isKing && Math.hypot(RT.ball.vel.x, RT.ball.vel.z) > 8.5 && roll < 0.18) move = "lob";
+  // Season 3: respect the king's rule — never plan a banned stroke.
+  if (isMoveBanned(g().rule, move)) move = "drive";
 
   const botSq = sqOf(bot, g().assign);
   const tSq = chooseBotTarget(botSq);
@@ -373,7 +389,7 @@ export function botServeHit(bot: Exclude<EntityId, "player">) {
   const botSq = sqOf(bot, g().assign);
   const tSq = chooseBotTarget(botSq);
   const move: MoveId = Math.random() < 0.18 ? "lob" : Math.random() < 0.35 ? "skimmer" : "drive";
-  const skill = Math.min(1, BOTS[bot].skill * skillFactor());
+  const skill = Math.min(1, BOTS[bot].skill * skillFactor() * ruleBotMul(g().rule));
   const sigma = (1 - skill) * 0.48;
   const quality = 0.70 + skill * 0.25;
   fireShot(bot, move, tacticalAim(tSq, move, sigma), quality);
@@ -408,7 +424,8 @@ export function botToss(bot: EntityId) {
 function fireShot(hitter: EntityId, move: MoveId, target: THREE.Vector3, quality: number) {
   const md = MOVES[move];
   const from = RT.ball.pos.clone();
-  const T = md.T * (1 + (1 - quality) * 0.22);
+  // Season 3: LIGHTNING COURT shrinks every flight time — swing faster.
+  const T = md.T * (1 + (1 - quality) * 0.22) * ruleSpeedMul(g().rule);
   solveVel(from, target.x, target.z, T, RT.ball.vel);
   // clamps
   const v = RT.ball.vel;
@@ -434,7 +451,6 @@ export function botHit(bot: Exclude<EntityId, "player">) {
   setFace(bot, "hit", 0.9);
   burst("hit", RT.ball.pos, MOVES[plan.move].color);
   sfx.botHit();
-
 }
 
 // ── the player's swing ──────────────────────────────────────────
@@ -474,6 +490,16 @@ export function humanHit(kind: "power" | "soft") {
     }
   } else if (RT.input.lob) move = "lob";
   else move = "drive";
+
+  // Season 3 — the king's rule: a banned stroke is an instant fault.
+  // resolveOut() plays the fault sound and handles the rotation, so we
+  // just announce the rule and hand off.
+  if (isMoveBanned(g().rule, move)) {
+    g().popup(`RULE! ${ruleName(g().rule)} — YOU'RE OUT`, "red", true);
+    say("fault", "red");
+    resolveOut("player");
+    return;
+  }
 
   const md = MOVES[move];
   const relH = ball.pos.y - p.y;
@@ -515,7 +541,6 @@ export function humanHit(kind: "power" | "soft") {
     sfx.smash();
     RT.shake = 0.7;
   }
-
 
   if (move !== "drive" || q >= 0.85)
     st.popup(`${MOVES[move].name}!`, move === "smash" ? "red" : move === "skimmer" ? "cyan" : move === "lob" ? "purple" : "green");

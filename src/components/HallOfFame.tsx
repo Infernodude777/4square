@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useSettings, RECORD_META, formatRecord } from "../game/settings";
 import { recordFraction, rankForFraction } from "../game/rank";
 import { BadgesWall } from "./BadgesWall";
+import { Icon } from "./Icons";
 
 /** The ten shipped courts, with the chalk tints used across the yard. */
 const RECORD_MODES: { mode: string; title: string; tint: string; emoji: string }[] = [
@@ -34,6 +35,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  *
  * Season 2: the wall opens with a BLACKTOP RANK banner (the best chalk title
  * across every court) and each played court shows a win-rate chip.
+ * Season 3: the school-bell tally joins the lifetime stats.
  */
 export function HallOfFame({ onClose }: { onClose: () => void }) {
   const highScores = useSettings((s) => s.highScores);
@@ -92,11 +94,11 @@ export function HallOfFame({ onClose }: { onClose: () => void }) {
           </div>
           <button
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white/15 bg-white/5 text-base text-white/70 transition hover:border-[#ff6b5e] hover:bg-[#ff6b5e]/15 hover:text-[#ff8a7a]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white/15 bg-white/5 text-white/70 transition hover:border-[#ff6b5e] hover:bg-[#ff6b5e]/15 hover:text-[#ff8a7a]"
             title="Close (ESC)"
             aria-label="Close Hall of Fame"
           >
-            ✕
+            <Icon name="x" size={16} />
           </button>
         </div>
 
@@ -204,6 +206,7 @@ export function HallOfFame({ onClose }: { onClose: () => void }) {
             <span>Kickball runs · <span className="text-[#ffd23e] tabular-nums">{stats.totalRuns}</span></span>
             <span>Catches · <span className="text-[#ffd23e] tabular-nums">{stats.totalCatch}</span></span>
             <span>Swishes · <span className="text-[#ffd23e] tabular-nums">{stats.totalSwishes}</span></span>
+            <span>Bells · <span className="text-[#ffd23e] tabular-nums">{stats.bellsHeard}</span></span>
           </div>
         </div>
       </div>

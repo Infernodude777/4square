@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { Icon } from "./Icons";
 
 // ─────────────────────────────────────────────────────────────
 //  PHOTO MODE — the schoolyard yearbook (Season 2)
@@ -127,9 +128,10 @@ export function PhotoBar({ onExit }: { onExit: () => void }) {
       <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
         <button
           onClick={() => setHidden(false)}
-          className="pointer-events-auto rounded-full border border-white/15 bg-[#0d1219]/80 px-4 py-1.5 font-display text-xs text-white/70 backdrop-blur-sm transition hover:bg-white/10"
+          className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-[#0d1219]/80 px-4 py-1.5 font-display text-xs text-white/70 backdrop-blur-sm transition hover:bg-white/10"
         >
-          📸 SHOW PHOTO BAR (H)
+          <Icon name="camera" size={14} />
+          SHOW PHOTO BAR (H)
         </button>
       </div>
     );
@@ -143,7 +145,10 @@ export function PhotoBar({ onExit }: { onExit: () => void }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
       <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border-2 border-[#ffd23e]/40 bg-[#0d1219]/88 px-5 py-3 backdrop-blur-md">
-        <span className="font-display text-sm tracking-widest text-[#ffd23e]">📸 PHOTO MODE</span>
+        <span className="flex items-center gap-2 font-display text-sm tracking-widest text-[#ffd23e]">
+          <Icon name="camera" size={16} />
+          PHOTO MODE
+        </span>
         <span className="h-6 w-px bg-white/15" />
         <div className="flex items-center gap-3 text-[10px] font-bold text-white/55">
           <span>DRAG · orbit</span>
@@ -157,9 +162,10 @@ export function PhotoBar({ onExit }: { onExit: () => void }) {
             captureScreenshot();
             flash();
           }}
-          className="rounded-lg border-b-[3px] border-[#8f6a00] bg-[#ffd23e] px-4 py-1.5 font-display text-sm text-[#3a2a00] transition hover:bg-[#ffe066] active:translate-y-0.5 active:border-b-0"
+          className="flex items-center gap-1.5 rounded-lg border-b-[3px] border-[#8f6a00] bg-[#ffd23e] px-4 py-1.5 font-display text-sm text-[#3a2a00] transition hover:bg-[#ffe066] active:translate-y-0.5 active:border-b-0"
         >
-          {saved ? "✓ SAVED!" : "📥 SAVE"}
+          <Icon name="save" size={14} />
+          {saved ? "SAVED!" : "SAVE"}
         </button>
         <button
           onClick={onExit}

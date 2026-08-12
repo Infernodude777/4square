@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { MOVES, TARGET_SCORE, type MoveId } from "../game/constants";
 import { RT } from "../game/refs";
 import { rankForFraction } from "../game/rank";
+import { ruleName } from "../game/rules";
 import { useGame, visiblePopups, type Popup } from "../game/store";
 import { useSettings } from "../game/settings";
+import { Icon } from "./Icons";
 
 const TONE: Record<Popup["tone"], string> = {
   gold: "#ffd23e",
@@ -38,6 +40,20 @@ function Score() {
           className="h-full rounded-full bg-gradient-to-r from-[#f7b32b] to-[#ff5a3c] transition-all duration-500"
           style={{ width: `${Math.min(100, (score / TARGET_SCORE) * 100)}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+/* ── Season 3: the king's standing house rule ──────────────── */
+function RuleChip() {
+  const rule = useGame((s) => s.rule);
+  if (!rule) return null;
+  return (
+    <div className="pointer-events-none absolute left-5 top-32 select-none">
+      <div className="animate-chalkpop flex items-center gap-1.5 rounded-lg border-2 border-dashed border-[#ffd23e]/60 bg-[#0d1219]/85 px-3 py-1.5 backdrop-blur-sm">
+        <span className="text-[8px] font-extrabold tracking-[0.25em] text-white/40">KING CALLS</span>
+        <span className="font-display text-sm tracking-wide text-[#ffd23e]">{ruleName(rule)}</span>
       </div>
     </div>
   );
@@ -159,19 +175,19 @@ export function SettingsBtn() {
       )}
       <button
         onClick={toggleMute}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-white/60 backdrop-blur-sm transition hover:bg-white/10"
         aria-label={muted ? "Unmute" : "Mute"}
         title={muted ? "Unmute" : "Mute"}
       >
-        {muted ? "🔇" : "🔊"}
+        <Icon name={muted ? "speakerOff" : "speaker"} size={18} />
       </button>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-lg backdrop-blur-sm transition hover:bg-white/10"
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-white/60 backdrop-blur-sm transition hover:bg-white/10"
         aria-label="Show moves list"
         title="Moves"
       >
-        ⚙️
+        <Icon name="gear" size={18} />
       </button>
       {open && (
         <div className="absolute right-0 top-12 z-30 w-64 animate-cardin rounded-2xl border border-white/15 bg-[#0d1219]/95 p-4 backdrop-blur-md">
@@ -211,14 +227,15 @@ export function HUD() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-body">
       <Score />
+      <RuleChip />
       <SettingsBtn />
       <button
         onClick={() => setPaused(true)}
-        className="pointer-events-auto absolute right-5 top-16 flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-base backdrop-blur-sm transition hover:bg-white/10"
+        className="pointer-events-auto absolute right-5 top-16 flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#0d1219]/80 text-white/60 backdrop-blur-sm transition hover:bg-white/10"
         title="Pause (ESC)"
         aria-label="Pause (ESC)"
       >
-        ⏸
+        <Icon name="pause" size={18} />
       </button>
       <Popups />
       <TimingMeter />

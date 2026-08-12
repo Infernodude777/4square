@@ -1,10 +1,51 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
 import * as THREE from "three";
 import { makeCourtTexture } from "../game/textures";
 import { RT } from "../game/refs";
 import { SQ_CENTER, squareAt } from "../game/constants";
 import { useSettings } from "../game/settings";
+import { useGame } from "../game/store";
+import { ruleName } from "../game/rules";
+
+/**
+ * Season 3 — the court rule board. A little chalkboard on a post at the
+ * south edge of the court. In a match it shows the king's standing house
+ * rule (or "PLAY FREE" when no rule is up); in the hub it just reminds
+ * everyone who's in charge.
+ */
+function RuleBoard() {
+  const rule = useGame((s) => s.rule);
+  const name = rule ? ruleName(rule) : null;
+
+  return (
+    <group position={[0, 0.06, 4.92]}>
+      {/* post */}
+      <mesh castShadow position={[0, 0.62, 0]}>
+        <cylinderGeometry args={[0.05, 0.06, 1.28, 8]} />
+        <meshStandardMaterial color="#6f7a85" metalness={0.5} roughness={0.5} />
+      </mesh>
+      {/* board */}
+      <group position={[0, 1.52, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[1.7, 0.9, 0.06]} />
+          <meshStandardMaterial color="#16232c" roughness={0.82} />
+        </mesh>
+        <mesh position={[0, 0, -0.042]}>
+          <boxGeometry args={[1.86, 1.06, 0.04]} />
+          <meshStandardMaterial color="#24423a" roughness={0.7} />
+        </mesh>
+        <Text position={[0, 0.24, 0.03]} fontSize={0.13} color="#8fd8cf" anchorX="center" anchorY="middle">
+          {rule ? "KING CALLS" : "THE KING CALLS"}
+        </Text>
+        <Text position={[0, -0.1, 0.03]} fontSize={0.19} color="#ffd23e" anchorX="center" anchorY="middle">
+          {rule ? name : "THE RULES"}
+        </Text>
+      </group>
+    </group>
+  );
+}
 
 export function Court() {
   const tex = useMemo(() => makeCourtTexture(), []);
@@ -72,6 +113,8 @@ export function Court() {
         <planeGeometry args={[3.86, 3.86]} />
         <meshBasicMaterial color="#ffe066" transparent opacity={0.1} depthWrite={false} />
       </mesh>
+      {/* Season 3 — the king's rule board */}
+      <RuleBoard />
     </group>
   );
 }

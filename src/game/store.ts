@@ -4,6 +4,7 @@ import { sfx } from "./audio";
 import { useSettings, matchRecordValue, RECORD_META } from "./settings";
 import { checkBadges } from "./achievements";
 import { emoteRandomBot } from "./refs";
+import type { RuleId } from "./rules";
 
 export type Phase = "hub" | "menu" | "play" | "point" | "win";
 export type Mode =
@@ -74,6 +75,8 @@ interface GameState {
   winsThisSession: string[];
   /** set by win() when the match's metric beat the old record */
   lastWinWasRecord: boolean;
+  /** Season 3: the foursquare king's standing house rule (null = none) */
+  rule: RuleId | null;
   /** true while the pause menu is open */
   paused: boolean;
   assign: Record<number, EntityId>;
@@ -90,6 +93,7 @@ interface GameState {
   setGagaResult: (won: boolean, botsLeft: number, time: number) => void;
   setHopscotchResult: (time: number, faults: number, times: number[]) => void;
   setRedlightResult: (won: boolean, rounds: number) => void;
+  setRule: (r: RuleId | null) => void;
   addCatch: () => void;
   addSwish: () => void;
   addFoul: (who: "player" | "op") => void;
@@ -131,6 +135,7 @@ export const useGame = create<GameState>((set, get) => ({
   rlRounds: 0,
   winsThisSession: [],
   lastWinWasRecord: false,
+  rule: null,
   paused: false,
   score: 0,
   streak: 0,
@@ -186,6 +191,7 @@ export const useGame = create<GameState>((set, get) => ({
       rlWon: false,
       rlRounds: 0,
       lastWinWasRecord: false,
+      rule: null,
       paused: false,
       assign: { ...INITIAL_ASSIGN },
       line: INITIAL_LINE,
@@ -201,6 +207,7 @@ export const useGame = create<GameState>((set, get) => ({
   setHopscotchResult: (time, faults, times) => set({ hopTime: time, hopFaults: faults, hopTimes: times }),
   setRedlightResult: (won, rounds) => set({ rlWon: won, rlRounds: rounds }),
   setPaused: (p) => set({ paused: p }),
+  setRule: (rule) => set({ rule }),
   // Lifetime catch/swish counters feed the HOT HANDS / NET ONLY badges.
   addCatch: () => {
     const stats = useSettings.getState().stats;

@@ -16,6 +16,7 @@ export type BanterKind =
   | "perfect"   // perfect timing hit
   | "fault"     // you faulted
   | "rally"     // a long rally is happening
+  | "rule"      // the king called a house rule (Season 3)
   | "start"     // match start
   | "taunt";    // generic mid-match ribbing
 
@@ -78,6 +79,7 @@ const LINES: Record<BanterKind, string[]> = {
     "TURING: “interesting choice”",
     "ZIGGY: “yikes”",
     "REX: “the light was RED, champ”",
+    "REX: “the rule is the rule”",
   ],
   rally: [
     "ADA: “this is getting statistically improbable”",
@@ -85,6 +87,16 @@ const LINES: Record<BanterKind, string[]> = {
     "ALAN: “my fans are loving this”",
     "TURING: “the crowd is calculating too”",
     "REX: “nobody quits, nobody”",
+  ],
+  rule: [
+    "ADA: “a new rule. How… democratic.”",
+    "GRACE: “the king has spoken”",
+    "ALAN: “rules are rules. I guess.”",
+    "TURING: “new constraint detected”",
+    "REX: “who made THAT rule??”",
+    "ZIGGY: “house rules!! okay okay”",
+    "TURING: “I don't make the rules. I compute them.”",
+    "REX: “fine. fine. no smashing. FINE.”",
   ],
   start: [
     "ADA: “let's see what you learned”",

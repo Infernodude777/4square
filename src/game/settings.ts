@@ -20,6 +20,7 @@ import { createDebouncedStorage } from "./persist";
 //    • high scores per game mode
 //    • lifetime stats (games, time, hits, perfects, KOs, …)
 //    • the daily-challenge counters
+//    • bells heard (Season 3 — the school day's final bell)
 //
 //  The store is deliberately decoupled from the game loop — game
 //  code reads it with useSettings.getState() and the UI subscribes
@@ -117,6 +118,8 @@ export interface LifetimeStats {
   totalRuns: number;       // kickball runs scored
   totalCatch: number;      // dodgeball catches
   totalSwishes: number;    // basketball swishes
+  /** Season 3: how many times the 3:00 PM bell has rung on your watch */
+  bellsHeard: number;
   /** per-mode win tally — powers the Hall of Fame win rates (Season 2) */
   modeWins: Record<string, number>;
 }
@@ -132,6 +135,7 @@ const INITIAL_STATS: LifetimeStats = {
   totalRuns: 0,
   totalCatch: 0,
   totalSwishes: 0,
+  bellsHeard: 0,
   modeWins: {},
 };
 
@@ -172,6 +176,7 @@ interface SettingsState {
   patchStats: (p: Partial<LifetimeStats>) => void;
   addTime: (dt: number) => void;
   noteModePlay: (mode: string) => void;
+  noteBell: (overtime?: boolean) => void;
   resetStats: () => void;
 
   noteDailyPlay: (mode: string) => void;
@@ -294,6 +299,14 @@ export const useSettings = create<SettingsState>()(
           modePlays: { ...s.modePlays, [mode]: (s.modePlays[mode] ?? 0) + 1 },
         })),
 
+      // Season 3 — the final bell rang. Tally it and let the badge wall
+      // know (overtime = a match was live when the bell went).
+      noteBell: (overtime) => {
+        const s = get();
+        set({ stats: { ...s.stats, bellsHeard: s.stats.bellsHeard + 1 } });
+        checkBadges({ kind: "bell", overtime });
+      },
+
       resetStats: () =>
         set(() => ({
           stats: { ...INITIAL_STATS },
@@ -353,10 +366,11 @@ export const useSettings = create<SettingsState>()(
       name: "recess-royale-settings-v1",
       // Bump whenever the persisted shape changes. migrate() below runs
       // on load for older stored states.
-      version: 4,
+      version: 5,
+      // v4 → v5 (Season 3): stats.bellsHeard + the SCHOOL'S OUT / OVERTIME
+      // badges. Old stores simply get the new defaults; nothing converts.
       // v3 → v4 (Season 2): musicVolume + quality presets + per-mode win
-      // tallies + the red-light lane's record. Old stores simply get the
-      // new defaults; nothing needs converting.
+      // tallies + the red-light lane's record.
       migrate: (persisted) => {
         const p = (persisted ?? {}) as Partial<SettingsState> & Record<string, unknown>;
         const stats: LifetimeStats = {

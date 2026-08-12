@@ -57,6 +57,9 @@ export const BADGES: BadgeDef[] = [
   { id: "marathon",    name: "RECESS LEGEND",   desc: "Spend 2 hours at recess",             emoji: "⏳", secret: true },
   { id: "pentathlete", name: "PENTATHLETE",     desc: "Win the original five modes",         emoji: "🎖️", secret: true },
   { id: "superstar",   name: "SUPERSTAR",       desc: "Win every mode at least once",        emoji: "🌟", secret: true },
+  // ── Season 3: the school bell ──
+  { id: "schools-out", name: "SCHOOL'S OUT",    desc: "Hear the final bell ring",            emoji: "🏫" },
+  { id: "overtime",    name: "OVERTIME",        desc: "Keep playing when the bell rings",    emoji: "🌙", secret: true },
 ];
 
 export type BadgeEvent =
@@ -67,6 +70,7 @@ export type BadgeEvent =
   | { kind: "catch"; count: number }
   | { kind: "swish"; count: number }
   | { kind: "dailyDone" }
+  | { kind: "bell"; overtime?: boolean }
   | { kind: "stats"; perfects: number; kos: number; rallies: number; bestStreak: number; timePlayed: number }
   | { kind: "reset" };
 
@@ -156,7 +160,7 @@ export function checkBadges(ev: BadgeEvent) {
       if (allModes.every((b) => unlocked.includes(b) || b === bid)) {
         unlock("superstar");
       }
-      // Season 2 milestone badges.
+      // Milestone badges.
       if (ev.totalWins === 1) unlock("first-win");
       const session = new Set(ev.winsThisSession ?? []).size;
       if (session >= 3) unlock("sweep-3");
@@ -189,6 +193,12 @@ export function checkBadges(ev: BadgeEvent) {
       break;
     case "dailyDone":
       unlock("daily");
+      break;
+    case "bell":
+      // Season 3 — the final bell rang. Overtime only counts if a
+      // match was actually live when it did.
+      unlock("schools-out");
+      if (ev.overtime) unlock("overtime");
       break;
     case "stats":
       if (ev.perfects >= 10) unlock("perfect-10");

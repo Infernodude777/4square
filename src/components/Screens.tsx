@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useGame } from "../game/store";
 import { useSettings, formatRecord, RECORD_META, matchRecordValue } from "../game/settings";
 import { rankForRecord } from "../game/rank";
+import { addMark } from "../game/graffiti";
 
 export function Victory() {
   const st = useGame();
   const settings = useSettings();
+  const [draft, setDraft] = useState("");
+  const [savedMark, setSavedMark] = useState(false);
 
   const confetti = useMemo(
     () =>
@@ -20,6 +23,15 @@ export function Victory() {
       })),
     [],
   );
+
+  // Season 3 — scrawl a mark on the chalk wall. Empty marks are ignored;
+  // the wall keeps the newest six, so there's room for everyone.
+  const chalkIt = () => {
+    if (!addMark(draft).length) return;
+    setDraft("");
+    setSavedMark(true);
+    setTimeout(() => setSavedMark(false), 1800);
+  };
 
   const kickWon = st.mode === "kickball" && st.kickYou > st.kickBot;
   const bestBotTime = st.hopTimes.length ? Math.min(...st.hopTimes) : 99;
@@ -196,6 +208,32 @@ export function Victory() {
           >
             BACK
           </button>
+        </div>
+
+        {/* Season 3 — leave your mark on the chalk wall */}
+        <div className="mt-5 border-t-2 border-dashed border-[#d8b8a0] pt-4">
+          <div className="text-center text-[9px] font-extrabold uppercase tracking-[0.3em] text-[#8a7055]">
+            Leave your mark on the chalk wall
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={40}
+              placeholder="scrawl something…"
+              aria-label="Chalk-wall message"
+              className="min-w-0 flex-1 rounded-lg border-2 border-dashed border-[#c09880] bg-white/70 px-3 py-2 text-xs font-bold text-[#3a2a12] outline-none placeholder:text-[#a08870]/60 focus:border-[#e2483d]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") chalkIt();
+              }}
+            />
+            <button
+              onClick={chalkIt}
+              className="rounded-lg border-b-[3px] border-[#8f6a00] bg-[#f8d44c] px-4 py-2 font-display text-sm text-[#2e1a05] transition hover:bg-[#f8e060] active:translate-y-0.5 active:border-b-0"
+            >
+              {savedMark ? "ON THE WALL!" : "CHALK IT"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

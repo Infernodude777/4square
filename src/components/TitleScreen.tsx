@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Icon } from "./Icons";
 
 /**
  * Main menu (P1-1). Shown on first run (and after a settings wipe that
@@ -6,6 +7,9 @@ import { useEffect } from "react";
  * persisted `hasStarted` flag so returning recess kids drop straight into
  * the yard. The hub keeps rendering behind the frosted card, so the first
  * thing anyone sees is the actual playground.
+ *
+ * Season 3: ten courts (the copy finally admits it) and a nod to the
+ * school bell — recess ends at 3, but the yard never really closes.
  */
 export function TitleScreen({
   onPlay,
@@ -45,20 +49,22 @@ export function TitleScreen({
           <span className="block text-[#ff6b5e]">ROYALE</span>
         </h1>
         <p className="mt-3 text-xs font-bold tracking-wide text-white/55">
-          Nine courts · four robot rivals · one crown
+          Ten courts · four robot rivals · one crown
         </p>
 
         <button
           onClick={onPlay}
-          className="mt-8 w-full rounded-xl border-b-[5px] border-[#8f6a00] bg-[#ffd23e] py-3.5 font-display text-2xl text-[#3a2a00] transition hover:-translate-y-0.5 hover:bg-[#ffe066] hover:shadow-[0_8px_24px_rgba(255,210,62,0.35)] active:translate-y-0.5 active:border-b-0"
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border-b-[5px] border-[#8f6a00] bg-[#ffd23e] py-3.5 font-display text-2xl text-[#3a2a00] transition hover:-translate-y-0.5 hover:bg-[#ffe066] hover:shadow-[0_8px_24px_rgba(255,210,62,0.35)] active:translate-y-0.5 active:border-b-0"
         >
-          ▶ PLAY
+          <Icon name="play" size={22} />
+          PLAY
         </button>
         <button
           onClick={onSettings}
-          className="mt-3 w-full rounded-xl border-2 border-white/15 bg-white/5 py-2.5 text-sm font-extrabold text-white/75 transition hover:bg-white/10"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-white/15 bg-white/5 py-2.5 text-sm font-extrabold text-white/75 transition hover:bg-white/10"
         >
-          ⚙️ SETTINGS
+          <Icon name="gear" size={16} />
+          SETTINGS
         </button>
 
         <div className="mt-6 text-[9px] font-bold tracking-widest text-white/30">
@@ -66,6 +72,9 @@ export function TitleScreen({
         </div>
         <div className="mt-1 text-[9px] font-bold tracking-widest text-white/20">
           WASD TO WALK · E TO PLAY · DESKTOP + MOUSE REQUIRED
+        </div>
+        <div className="mt-2 text-[9px] font-bold tracking-widest text-[#ffd23e]/40">
+          THE BELL RINGS AT 3 — STAY LATE FOR OVERTIME
         </div>
       </div>
     </div>
