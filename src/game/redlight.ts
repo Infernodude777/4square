@@ -220,9 +220,14 @@ export function rlStep(t: RLState, dt: number, input: { moving: boolean }): RLSt
         ev.botCaught = b.id;
       }
     } else if (b.caughtRed) {
-      b.moving = false; // already had its moment this red
+      b.moving = false; // already decided this red phase
     } else if (Math.random() < d.reaction) {
-      b.moving = false; // sharp stop
+      // Reacted in time — lock in a clean stop for the rest of this red.
+      // (Previously this re-rolled every frame, so a "stopped" bot could
+      // randomly break into a sprint again, and the odds depended on the
+      // host's frame rate.)
+      b.moving = false;
+      b.caughtRed = true;
     } else {
       b.reaction = pick(d.caughtDelay * 0.5, d.caughtDelay); // late reaction
     }

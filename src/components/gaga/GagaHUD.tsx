@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame, visiblePopups, type Popup } from "../../game/store";
 import { useSettings } from "../../game/settings";
-import { GBOTS, HIT_REACH, ROUND_TIME } from "../../game/gaga";
+import { GBOTS, HIT_REACH, ROUND_TIME, BALL_R } from "../../game/gaga";
 import { GS } from "./gagaState";
 
 const TONE: Record<Popup["tone"], string> = {
@@ -105,7 +105,7 @@ function Hints() {
       const t = GS.current;
       const d = Math.hypot(t.ball.pos.x - t.player.pos.x, t.ball.pos.z - t.player.pos.z);
       setS({
-        canSlap: t.phase === "play" && t.player.alive && d < HIT_REACH && t.ball.pos.y > 0.14,
+        canSlap: t.phase === "play" && t.player.alive && d < HIT_REACH && t.ball.pos.y >= BALL_R,
         phase: t.phase,
         count: Math.ceil(t.countdown),
       });

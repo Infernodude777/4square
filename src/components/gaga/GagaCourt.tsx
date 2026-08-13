@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { PIT_R, WALL_H, OCTA, HIT_REACH } from "../../game/gaga";
+import { PIT_R, WALL_H, OCTA, HIT_REACH, BALL_R } from "../../game/gaga";
 import { makeWoodPitTexture } from "../../game/textures";
 import { GS } from "./gagaState";
 
@@ -48,7 +48,7 @@ function PlayerRing() {
     if (!ref.current || !mat.current) return;
     ref.current.position.set(t.player.pos.x, 0.02, t.player.pos.z);
     const d = Math.hypot(t.ball.pos.x - t.player.pos.x, t.ball.pos.z - t.player.pos.z);
-    const canSlap = t.player.alive && t.phase === "play" && d < HIT_REACH && t.ball.pos.y > 0.14;
+    const canSlap = t.player.alive && t.phase === "play" && d < HIT_REACH && t.ball.pos.y >= BALL_R;
     mat.current.color.set(canSlap ? "#7dff9a" : "#ffd23e");
     mat.current.opacity = t.player.alive ? (canSlap ? 0.55 : 0.2) : 0;
   });

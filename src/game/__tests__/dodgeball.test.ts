@@ -145,4 +145,38 @@ describe("dodgeball state machine", () => {
     expect(t.player.hasBall).toBe(true);
     expect(t.ball.holder).toBe("player");
   });
+
+  it("a bot in pickup can't steal a ball that's already held", () => {
+    const t = createDodgeState();
+    t.phase = "play";
+    // Bot 0 is mid-windup and owns the ball.
+    const holder = t.bots[0];
+    holder.hasBall = true;
+    holder.state = "windup";
+    holder.timer = 999;
+    t.ball.state = "held";
+    t.ball.holder = 0;
+    // Bot 1 reaches the end of its pickup — it must NOT grab the ball.
+    const rival = t.bots[1];
+    rival.state = "pickup";
+    rival.timer = 0.01;
+    stepD(t, 1 / 60);
+    expect(t.ball.holder).toBe(0);
+    expect(rival.hasBall).toBe(false);
+    expect(rival.state).toBe("idle");
+  });
+
+  it("a chasing bot stands down when the ball gets claimed", () => {
+    const t = createDodgeState();
+    t.phase = "play";
+    const chaser = t.bots[0];
+    chaser.state = "chase";
+    chaser.target.set(chaser.pos.x, 0, chaser.pos.z);
+    // The ball is now held by the player.
+    t.ball.state = "held";
+    t.ball.holder = "player";
+    t.player.hasBall = true;
+    stepD(t, 1 / 60);
+    expect(chaser.state).toBe("idle");
+  });
 });

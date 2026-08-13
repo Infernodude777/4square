@@ -1,6 +1,5 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Trail } from "@react-three/drei";
 import * as THREE from "three";
 import { BALL_R } from "../../game/dodgeball";
 import { DS } from "./dodgeballState";
@@ -59,12 +58,10 @@ export function DodgeballBall() {
 
   return (
     <group>
-      <Trail width={1.6} length={2.6} decay={1.4} color="#ff8a7a" attenuation={(tt) => tt * tt}>
-        <mesh ref={mesh} castShadow>
-          <sphereGeometry args={[BALL_R, 24, 24]} />
-          <meshStandardMaterial map={tex} roughness={0.5} />
-        </mesh>
-      </Trail>
+      <mesh ref={mesh} castShadow>
+        <sphereGeometry args={[BALL_R, 24, 24]} />
+        <meshStandardMaterial map={tex} roughness={0.5} />
+      </mesh>
       <mesh ref={blob} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.19, 24]} />
         <meshBasicMaterial ref={blobMat} color="#0e1116" transparent opacity={0.35} depthWrite={false} />

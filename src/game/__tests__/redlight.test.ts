@@ -116,9 +116,10 @@ describe("red light green light", () => {
     const t = toRunning();
     t.light = "red";
     t.lightTimer = 60;
-    // Let a bot finish to end the round.
+    // Park a bot on the finish line so the round ends deterministically
+    // (a stopped bot must never be expected to slide across on red).
     const bot = t.runners.find((r) => !r.isPlayer)!;
-    bot.z = RL_FINISH_Z + 0.01;
+    bot.z = RL_FINISH_Z;
     for (let i = 0; i < 120; i++) {
       rlStep(t, 1 / 60, { moving: false });
       if (t.phase === "roundEnd") break;

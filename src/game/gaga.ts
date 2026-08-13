@@ -89,6 +89,8 @@ export interface GBot {
   moving: boolean;
   alive: boolean;
   cooldown: number;
+  /** grace after the bot's own slap — same rule the player gets */
+  grace: number;
   wanderAt: number;
   target: THREE.Vector3;
 }
@@ -132,7 +134,7 @@ export function createGagaState(): GagaState {
     return {
       def, idx,
       pos: new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r),
-      facing: 0, moving: false, alive: true, cooldown: 0.5,
+      facing: 0, moving: false, alive: true, cooldown: 0.5, grace: 0,
       wanderAt: 0,
       target: new THREE.Vector3(),
     };
@@ -167,7 +169,10 @@ export function stepG(t: GagaState, dt: number) {
   t.shake = Math.max(0, t.shake - dt * 2);
   t.player.grace = Math.max(0, t.player.grace - dt);
   t.player.cooldown = Math.max(0, t.player.cooldown - dt);
-  for (const b of t.bots) b.cooldown = Math.max(0, b.cooldown - dt);
+  for (const b of t.bots) {
+    b.cooldown = Math.max(0, b.cooldown - dt);
+    b.grace = Math.max(0, b.grace - dt);
+  }
 
   switch (t.phase) {
     case "countdown":
@@ -214,9 +219,14 @@ function stepBall(t: GagaState, dt: number) {
     }
   }
 
-  // Pit walls (reflect along the nearest wall normal)
+  // Pit walls (reflect along the nearest wall normal).
+  // The ball must NEVER escape the pit: a hard slap can carry it well
+  // above the waist-high rail, and if we only reflected while b.y < WALL_H
+  // the ball would sail out into the yard and the rally would dead-end.
+  // Reflecting at every height turns the pit into a soft "cage" so a
+  // high ball bounces back in instead of vanishing.
   const d = octDist(b.x, b.z);
-  if (d > -BALL_R && b.y < WALL_H) {
+  if (d > -BALL_R) {
     // The closest edge of a convex octagon = the one with max signed dist.
     let nx = 0, nz = 0, best = -Infinity;
     for (let i = 0; i < 8; i++) {
@@ -257,15 +267,50 @@ function stepBall(t: GagaState, dt: number) {
 }
 
 function stepBots(t: GagaState, dt: number) {
+  const ball = t.ball;
+  const ballSpeed = Math.hypot(ball.vel.x, ball.vel.z);
+
   for (const bot of t.bots) {
     if (!bot.alive) continue;
-    // shuffle toward a wander target
-    if (t.time > bot.wanderAt) {
+
+    const bd = Math.hypot(ball.pos.x - bot.pos.x, ball.pos.z - bot.pos.z);
+    const ballLow = ball.pos.y < 1.0;
+
+    // ── Decide where to go ────────────────────────────────────
+    if (ballLow && ballSpeed < 3 && bd < 2.6 && bot.cooldown <= 0) {
+      // Loose ball nearby → go get it (purposeful, not aimless wandering).
+      // Only advance when the bot can actually slap, so it never walks
+      // straight onto a low ball it isn't ready to hit.
+      bot.target.set(
+        ball.pos.x + (Math.random() - 0.5) * 0.5,
+        0,
+        ball.pos.z + (Math.random() - 0.5) * 0.5,
+      );
+    } else if (ballLow && ballSpeed > 4 && bd < 2.4) {
+      // A fast low ball is flying our way — sidestep out of its path.
+      const closing =
+        (bot.pos.x - ball.pos.x) * ball.vel.x +
+        (bot.pos.z - ball.pos.z) * ball.vel.z < 0;
+      if (closing) {
+        const px = -(ball.pos.z - bot.pos.z);
+        const pz = ball.pos.x - bot.pos.x;
+        const len = Math.hypot(px, pz) || 1;
+        bot.target.set(bot.pos.x + (px / len) * 1.4, 0, bot.pos.z + (pz / len) * 1.4);
+      } else if (t.time > bot.wanderAt) {
+        bot.wanderAt = t.time + 1.4 + Math.random() * 2.2;
+        const a = Math.random() * Math.PI * 2;
+        const r = 0.6 + Math.random() * 2.4;
+        bot.target.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      }
+    } else if (t.time > bot.wanderAt) {
+      // Wander the pit, looking for a ball to hit.
       bot.wanderAt = t.time + 1.4 + Math.random() * 2.2;
       const a = Math.random() * Math.PI * 2;
       const r = 0.6 + Math.random() * 2.4;
       bot.target.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     }
+
+    // ── Move toward the target ────────────────────────────────
     const dx = bot.target.x - bot.pos.x;
     const dz = bot.target.z - bot.pos.z;
     const d = Math.hypot(dx, dz);
@@ -287,10 +332,10 @@ function stepBots(t: GagaState, dt: number) {
       bot.pos.z += nz * (od + 0.5);
     }
 
-    // Slap the ball when it's near.
-    const bd = Math.hypot(t.ball.pos.x - bot.pos.x, t.ball.pos.z - bot.pos.z);
-    const ballHigh = t.ball.pos.y > 0.14 && t.ball.pos.y < 1.25;
-    if (bot.cooldown <= 0 && bd < HIT_REACH && ballHigh) {
+    // Slap the ball when it's in reach — rolling low or bouncing, anything
+    // below shoulder height counts.
+    const ballHittable = ball.pos.y >= BALL_R && ball.pos.y < 1.25;
+    if (bot.cooldown <= 0 && bd < HIT_REACH && ballHittable) {
       // Aim away from self, slightly toward the player if nearby.
       let tx = bot.pos.x * 1.6;
       let tz = bot.pos.z * 1.6;
@@ -303,7 +348,7 @@ function stepBots(t: GagaState, dt: number) {
       slap(t, bot.idx, tx, tz, bot.def.slap);
       bot.cooldown = 0.55 + Math.random() * 0.5;
     }
-    bot.facing = Math.atan2(t.ball.pos.x - bot.pos.x, t.ball.pos.z - bot.pos.z);
+    bot.facing = Math.atan2(ball.pos.x - bot.pos.x, ball.pos.z - bot.pos.z);
   }
 }
 
@@ -317,7 +362,10 @@ export function slap(
 ): boolean {
   const b = t.ball;
   const from = b.pos.clone();
-  if (b.pos.y < 0.14) return false;
+  // A ball resting on the pit floor sits at exactly BALL_R — it MUST still
+  // be slap-able (that's the whole game). The old `0.14` gate sat just
+  // above BALL_R, so a settled ball could never be hit by anyone.
+  if (b.pos.y < BALL_R) return false;
   const speed = 4.4 + power * 3.4;
   const dx = tx - from.x;
   const dz = tz - from.z;
@@ -329,6 +377,7 @@ export function slap(
     t.player.cooldown = 0.3;
   } else {
     t.bots[hitter].cooldown = 0.5;
+    t.bots[hitter].grace = 0.5;
   }
   gaSlap();
   return true;
@@ -353,10 +402,11 @@ function checkTouch(t: GagaState) {
     }
   }
 
-  // Bots out?
+  // Bots out? (grace covers the bot's own slap — a rebound can still get
+  // them once it expires, exactly like the player's rule.)
   for (const bot of t.bots) {
     if (!bot.alive) continue;
-    if (t.ball.lastHitter === bot.idx && t.ball.lastHitter !== null) continue;
+    if (bot.grace > 0) continue;
     const d = Math.hypot(b.x - bot.pos.x, b.z - bot.pos.z);
     if (d < OUT_DIST + BALL_R) {
       bot.alive = false;

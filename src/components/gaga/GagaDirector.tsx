@@ -5,7 +5,7 @@ import { useGame } from "../../game/store";
 import { sfx, buzzer } from "../../game/audio";
 import { say } from "../../game/banter";
 import { useSettings } from "../../game/settings";
-import { PIT_R, stepG, slap, clamp, octDist } from "../../game/gaga";
+import { PIT_R, BALL_R, stepG, slap, clamp, octDist } from "../../game/gaga";
 import { GS, resetGaga } from "./gagaState";
 
 interface Input {
@@ -132,7 +132,9 @@ export function GagaDirector() {
       input.clickQ = false;
       if (p.alive && t.phase === "play" && p.cooldown <= 0) {
         const d = Math.hypot(t.ball.pos.x - p.pos.x, t.ball.pos.z - p.pos.z);
-        const reachable = d < 1.45 && t.ball.pos.y > 0.14 && t.ball.pos.y < 1.3;
+        // Anything in reach below shoulder height is fair game — including
+        // a ball resting on the floor (y === BALL_R).
+        const reachable = d < 1.45 && t.ball.pos.y >= BALL_R && t.ball.pos.y < 1.3;
         if (reachable) {
           if (slap(t, "player", ax, az, 1)) {
             sfx.perfect();

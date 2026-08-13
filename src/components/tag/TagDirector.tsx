@@ -119,7 +119,28 @@ export function TagDirector() {
 
     // ── Player movement ───────────────────────────────────────
     const p = t.entities["player"];
-    {
+    if (t.mode === "freeze" && p.frozen) {
+      // Frozen solid — WASD does nothing until a teammate thaws them out.
+      p.moving = false;
+    } else if (t.mode === "blob" && p.blobIdx > 0) {
+      // Absorbed into the blob — follow the chain like every other member
+      // instead of being able to run free again.
+      const members = blobMembers(t.entities);
+      const ahead = members[p.blobIdx - 1];
+      const dx = ahead ? ahead.pos.x - p.pos.x : 0;
+      const dz = ahead ? ahead.pos.z - p.pos.z : 0;
+      const d = Math.hypot(dx, dz);
+      if (ahead && d > 0.8) {
+        const spd = PLAYER_SPEED * 1.05;
+        p.pos.x = cl(p.pos.x + (dx / d) * Math.min(d, spd * dt), -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        p.pos.z = cl(p.pos.z + (dz / d) * Math.min(d, spd * dt), -TAG_YARD_HALF + 0.4, TAG_YARD_HALF - 0.4);
+        p.facing = Math.atan2(dx / d, dz / d);
+        p.walkPhase += dt * 10;
+        p.moving = true;
+      } else {
+        p.moving = false;
+      }
+    } else {
       let mx = 0, mz = 0;
       if (keys.w) mz -= 1;
       if (keys.s) mz += 1;

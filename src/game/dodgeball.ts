@@ -159,16 +159,33 @@ export function createDodgeState(): DodgeState {
 }
 
 // ── helpers ──────────────────────────────────────────────────
+/**
+ * Assign the single ball to exactly one owner and keep every `hasBall`
+ * flag in sync. Dodgeball has ONE ball — when two bots chased the same
+ * loose ball they used to both end up "holding" it, which teleported the
+ * ball between bots mid-rally. Ownership now flows through this one gate.
+ */
 function giveBall(t: DodgeState, holder: "player" | number | null) {
   const b = t.ball;
   b.holder = holder;
   b.state = "held";
   b.vel.set(0, 0, 0);
-  if (holder === "player") {
-    t.player.hasBall = true;
-  } else if (holder !== null) {
-    t.bots[holder].hasBall = true;
-  }
+  t.player.hasBall = holder === "player";
+  for (const bot of t.bots) bot.hasBall = holder === bot.idx;
+}
+
+/**
+ * Where a held ball sits — just in FRONT of the holder's chest, at hand
+ * height. Placing it at the character's exact centre used to bury the ball
+ * inside the torso model.
+ */
+function heldBallPos(t: DodgeState, holder: "player" | number): THREE.Vector3 {
+  const e = holder === "player" ? t.player : t.bots[holder];
+  return new THREE.Vector3(
+    e.pos.x + Math.sin(e.facing) * 0.45,
+    1.1,
+    e.pos.z + Math.cos(e.facing) * 0.45,
+  );
 }
 
 // ── the big step ─────────────────────────────────────────────
@@ -224,12 +241,7 @@ export function stepD(t: DodgeState, dt: number) {
 function stepBall(t: DodgeState, dt: number) {
   const b = t.ball;
   if (b.state === "held") {
-    if (b.holder === "player") {
-      b.pos.set(t.player.pos.x, 1.15, t.player.pos.z);
-    } else if (b.holder !== null) {
-      const bot = t.bots[b.holder];
-      b.pos.set(bot.pos.x, 1.15, bot.pos.z);
-    }
+    if (b.holder !== null) b.pos.copy(heldBallPos(t, b.holder));
     return;
   }
   const v = b.vel;
@@ -274,7 +286,7 @@ export function playerPickup(t: DodgeState): boolean {
   const d = Math.hypot(b.pos.x - t.player.pos.x, b.pos.z - t.player.pos.z);
   if (d > 0.75) return false;
   giveBall(t, "player");
-  b.pos.set(t.player.pos.x, 1.15, t.player.pos.z);
+  b.pos.copy(heldBallPos(t, "player"));
   sfx.ui();
   return true;
 }
@@ -291,12 +303,12 @@ function stepBots(t: DodgeState, dt: number) {
     const d = Math.hypot(dx, dz);
 
     switch (bot.state) {
-      case "idle":
+      case "idle": {
+        bot.moving = bot.pos.distanceTo(bot.home) > 0.15;
         bot.pos.lerp(bot.home, 1 - Math.exp(-dt * 3));
-        bot.moving = d > 0.15;
-        bot.facing = Math.atan2(-bot.pos.x, -(bot.pos.z - t.player.pos.z));
-        // Loose ball nearby → chase it
-        if (t.ball.state === "ground") {
+        // Watch the player while waiting for a loose ball.
+        bot.facing = Math.atan2(t.player.pos.x - bot.pos.x, t.player.pos.z - bot.pos.z);
+        if (t.ball.state === "ground" && t.ball.holder === null) {
           const bd = Math.hypot(t.ball.pos.x - bot.pos.x, t.ball.pos.z - bot.pos.z);
           if (bd < 6.5) {
             bot.state = "chase";
@@ -304,8 +316,17 @@ function stepBots(t: DodgeState, dt: number) {
           }
         }
         break;
+      }
 
-      case "chase":
+      case "chase": {
+        // The ball was claimed by someone else while we ran — stand down.
+        if (t.ball.state !== "ground" || t.ball.holder !== null) {
+          bot.state = "idle";
+          break;
+        }
+        // Follow the LIVE ball so a rival can't beat us to a spot we
+        // already passed.
+        bot.target.set(t.ball.pos.x, 0, t.ball.pos.z);
         bot.moving = d > 0.12;
         if (d > 0.12) {
           const step = Math.min(d, bot.def.speed * dt);
@@ -317,17 +338,24 @@ function stepBots(t: DodgeState, dt: number) {
           bot.timer = 0.45;
         }
         break;
+      }
 
       case "pickup":
         bot.moving = false;
         bot.timer -= dt;
         if (bot.timer <= 0) {
-          bot.hasBall = true;
-          t.ball.pos.set(bot.pos.x, 1.15, bot.pos.z);
-          t.ball.holder = bot.idx;
-          t.ball.state = "held";
-          bot.state = "windup";
-          bot.timer = 0.5 + Math.random() * 0.5;
+          // Only claim a ball that is STILL loose — another bot (or the
+          // player) may have scooped it up first.
+          if (t.ball.state === "ground" && t.ball.holder === null) {
+            bot.hasBall = true;
+            t.ball.pos.copy(heldBallPos(t, bot.idx));
+            t.ball.holder = bot.idx;
+            t.ball.state = "held";
+            bot.state = "windup";
+            bot.timer = 0.5 + Math.random() * 0.5;
+          } else {
+            bot.state = "idle";
+          }
         }
         break;
 
@@ -339,6 +367,9 @@ function stepBots(t: DodgeState, dt: number) {
           botThrow(t, bot);
           bot.state = "retreat";
           bot.timer = 0.6;
+          // Step back toward the bot's own line instead of drifting off
+          // toward whatever the old chase target happened to be.
+          bot.target.set(bot.pos.x, 0, clamp(bot.pos.z + 1.4, 0.7, COURT_LEN - 0.5));
         }
         break;
       }
@@ -366,11 +397,16 @@ function stepBots(t: DodgeState, dt: number) {
       const toBotZ = bot.pos.z - b.z;
       const closing = Math.hypot(toBotX, toBotZ) < 2.6 &&
         (toBotX * t.ball.vel.x + toBotZ * t.ball.vel.z) < 0;
-      if (closing && Math.random() < bot.def.dodge * (1 / botReactionFactor()) * 0.35 * dt * 60) {
-        const side = Math.random() < 0.5 ? 1 : -1;
-        bot.target.set(bot.pos.x + side * 1.6, 0, bot.pos.z + (Math.random() < 0.5 ? 0.8 : -0.8));
-        bot.state = "retreat";
-        bot.timer = 0.4;
+      if (closing) {
+        // Frame-rate independent: an exponential hazard at a fixed
+        // per-second rate keeps dodge behaviour identical at 30/60/144 Hz.
+        const rate = bot.def.dodge * (1 / botReactionFactor()) * 21;
+        if (Math.random() < 1 - Math.exp(-rate * dt)) {
+          const side = Math.random() < 0.5 ? 1 : -1;
+          bot.target.set(bot.pos.x + side * 1.6, 0, bot.pos.z + (Math.random() < 0.5 ? 0.8 : -0.8));
+          bot.state = "retreat";
+          bot.timer = 0.4;
+        }
       }
     }
   }
@@ -382,7 +418,7 @@ function botThrow(t: DodgeState, bot: DBot) {
   b.lastHitter = bot.idx;
   b.holder = null;
   b.state = "flight";
-  b.pos.set(bot.pos.x, 1.25, bot.pos.z);
+  b.pos.set(bot.pos.x + Math.sin(bot.facing) * 0.45, 1.25, bot.pos.z + Math.cos(bot.facing) * 0.45);
 
   // Lead the player slightly, capped so it's still dodgeable.
   const p = t.player.pos;
@@ -409,7 +445,7 @@ export function playerThrow(t: DodgeState, aim: THREE.Vector3) {
   b.lastHitter = "player";
   b.holder = null;
   b.state = "flight";
-  b.pos.set(t.player.pos.x, 1.25, t.player.pos.z);
+  b.pos.set(t.player.pos.x + Math.sin(t.player.facing) * 0.45, 1.25, t.player.pos.z + Math.cos(t.player.facing) * 0.45);
   const dist = Math.hypot(aim.x - b.pos.x, aim.z - b.pos.z);
   const T = clamp(dist / 9.5, 0.4, 1.4);
   b.vel.set((aim.x - b.pos.x) / T, (BALL_R - b.pos.y) / T + 0.5 * GRAV * T + 0.7, (aim.z - b.pos.z) / T);
@@ -433,7 +469,7 @@ export function playerCatch(t: DodgeState): boolean {
   // Catch! The thrower is out.
   const thrower = b.lastHitter;
   b.vel.set(0, 0, 0);
-  b.pos.set(t.player.pos.x, 1.15, t.player.pos.z);
+  b.pos.copy(heldBallPos(t, "player"));
   giveBall(t, "player");
   if (thrower !== null && t.bots[thrower].alive) {
     eliminateBot(t, thrower, "CAUGHT OUT!");
