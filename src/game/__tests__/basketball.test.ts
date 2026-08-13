@@ -122,4 +122,42 @@ describe("basketball H.O.R.S.E. state machine", () => {
     expect(t.turn).toBe(1); // SLAM matched it — stays as free shooter
     expect(t.letters[1]).toHaveLength(0);
   });
+
+  it("a held ball sits in front of the shooter, not buried at their centre", () => {
+    const t = createBState();
+    t.turn = 0;
+    t.playerPos.set(0, 0, 0);
+    t.playerY = 0;
+    t.playerFacing = 0;
+    t.ballState = "held";
+    stepB(t, 1 / 60);
+
+    // Facing +z → the ball hangs ~0.42 in front at hand height.
+    expect(t.ballPos.x).toBeCloseTo(0, 2);
+    expect(t.ballPos.z).toBeCloseTo(0.42, 2);
+    expect(t.ballPos.y).toBeCloseTo(1.15, 2);
+    expect(Math.hypot(t.ballPos.x, t.ballPos.z)).toBeGreaterThan(0.3);
+  });
+
+  it("a bot winds up before releasing, instead of firing the instant it enters aim", () => {
+    const t = createBState();
+    t.turn = 1;
+    t.forcedSpot = 0;
+    t.opPos.set(SPOTS[0].x, 0, SPOTS[0].z);
+
+    let guard = 0;
+    while (t.phase !== "aim" && guard++ < 300) stepB(t, 1 / 60);
+    expect(t.phase).toBe("aim");
+    // The release clock must be in the future right after entering aim.
+    expect(t.opAimAt).toBeGreaterThan(t.time);
+  });
+
+  it("the ball rests on the ground while the result plays (no teleport to hands)", () => {
+    const t = parkAndAim(createBState(), 0);
+    releaseShot(t, 0.72);
+    expect(settle(t, "resolve")).toBe("resolve");
+
+    expect(t.ballState).toBe("ground");
+    expect(t.ballPos.y).toBeLessThan(0.5);
+  });
 });

@@ -1,6 +1,5 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Trail } from "@react-three/drei";
 import * as THREE from "three";
 import { BALL_R } from "../../game/basketball";
 import { BS } from "./basketballState";
@@ -49,15 +48,10 @@ export function BasketballBall() {
   useFrame((_, delta) => {
     const t = BS.current;
     if (!mesh.current || !blob.current) return;
-    const visible = t.ballState !== "held" || t.phase !== "over";
-    mesh.current.visible = visible && (t.phase === "flight" || t.phase === "aim" || t.phase === "resolve" || t.phase === "over" || t.phase === "pick");
-    if (!mesh.current.visible) {
-      // show the ball in the holder's hands
-      const holder = t.turn === 0 ? t.playerPos : t.opPos;
-      mesh.current.position.set(holder.x, 1.25, holder.z);
-      blob.current.visible = false;
-      return;
-    }
+    // The game logic keeps `ballPos` correct in every phase (in front of
+    // the shooter's chest while held, a live ballistic arc in flight, and
+    // resting on the blacktop during resolve), so the mesh just follows it.
+    mesh.current.visible = true;
     mesh.current.position.copy(t.ballPos);
     mesh.current.rotation.x += t.ballVel.z * delta * 2.8;
     mesh.current.rotation.z -= t.ballVel.x * delta * 2.8;
@@ -68,12 +62,10 @@ export function BasketballBall() {
 
   return (
     <group>
-      <Trail width={1.8} length={3.2} decay={1.3} color="#ffb25e" attenuation={(tt) => tt * tt}>
-        <mesh ref={mesh} castShadow>
-          <sphereGeometry args={[BALL_R, 26, 26]} />
-          <meshStandardMaterial map={tex} roughness={0.55} />
-        </mesh>
-      </Trail>
+      <mesh ref={mesh} castShadow>
+        <sphereGeometry args={[BALL_R, 26, 26]} />
+        <meshStandardMaterial map={tex} roughness={0.55} />
+      </mesh>
       <mesh ref={blob} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.2, 24]} />
         <meshBasicMaterial ref={blobMat} color="#0e1116" transparent opacity={0.35} depthWrite={false} />

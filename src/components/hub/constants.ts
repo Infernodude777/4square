@@ -31,8 +31,12 @@ export const WALL_POS: [number, number, number] = [0, 0, -10];
  */
 export const KICK_POS: [number, number, number] = [2, 0, 0];
 
-/** Basketball half court — north-east corner, hoop against the east fence. */
-export const BASKET_POS: [number, number, number] = [11, 0, -7];
+/**
+ * Basketball half court — north-east corner, hoop facing the yard. The court
+ * runs ~8 m deeper (north) than the hoop, so z must leave that depth clear of
+ * the north fence (z −13) — this origin parks the baseline right against it.
+ */
+export const BASKET_POS: [number, number, number] = [11, 0, -5];
 
 /** Gaga pit — north-west corner (octagon, radius ~3.7). */
 export const GAGA_POS: [number, number, number] = [-8.5, 0, -8];

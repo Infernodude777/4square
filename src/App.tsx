@@ -249,7 +249,7 @@ export default function App() {
         : isKick
           ? [0, 10, 13]
           : isBasket
-            ? [0, 6.6, 8]
+            ? [11, 5.2, 0.35]
             : isDodge
               ? [0, 8.2, 7]
               : isGaga

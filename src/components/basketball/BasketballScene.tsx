@@ -1,6 +1,7 @@
 import { Sky, Clouds, Cloud } from "@react-three/drei";
 import * as THREE from "three";
 import { World } from "../World";
+import { BASKET_POS } from "../hub/constants";
 import { BasketballCourt } from "./BasketballCourt";
 import { BasketballPlayers } from "./BasketballPlayers";
 import { BasketballBall } from "./BasketballBall";
@@ -33,9 +34,12 @@ export function BasketballScene() {
         <Cloud position={[25, 31, -70]} speed={0.08} opacity={0.65} segments={20} bounds={[14, 3.4, 3]} color="#fdfdff" />
       </Clouds>
       <World />
-      <BasketballCourt />
-      <BasketballPlayers />
-      <BasketballBall />
+      {/* The court sits in the north-east corner, matching the hub chalk. */}
+      <group position={BASKET_POS}>
+        <BasketballCourt />
+        <BasketballPlayers />
+        <BasketballBall />
+      </group>
       <BasketballDirector />
     </>
   );

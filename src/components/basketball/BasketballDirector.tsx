@@ -5,8 +5,9 @@ import { useGame } from "../../game/store";
 import { sfx, buzzer } from "../../game/audio";
 import { say } from "../../game/banter";
 import { useSettings } from "../../game/settings";
+import { BASKET_POS } from "../hub/constants";
 import {
-  COURT_HALF_W, BASELINE_Z, FOUL_LINE_Z, RIM_Z,
+  COURT_HALF_W, BASELINE_Z, FOUL_LINE_Z, RIM_Z, RIM_H,
   nearestSpot, startShot, releaseShot, stepB, clamp,
 } from "../../game/basketball";
 import { BS, resetBasketball } from "./basketballState";
@@ -155,13 +156,19 @@ export function BasketballDirector() {
 
   function doCam(snap: boolean) {
     const t = BS.current;
-    const focus = t.ballState === "flight" ? t.ballPos : t.turn === 0 ? t.playerPos : t.opPos;
-    const cx = clamp(focus.x * 0.35, -2.6, 2.6);
-    const cy = 6.6;
-    const cz = clamp(focus.z + 7.6, 1.5, 3.2);
-    const lx = clamp(focus.x * 0.3, -1.8, 1.8);
-    const ly = 1.5;
-    const lz = RIM_Z + 0.5;
+    // The court lives in the north-east corner with the hoop facing the yard,
+    // so the camera hangs in the open yard SOUTH of the hoop and looks back
+    // over the rim at the shooters. Tracking the shooter's x keeps both the
+    // shooter and the hoop in frame as they walk the spots.
+    const shooter = t.turn === 0 ? t.playerPos : t.opPos;
+    const bx = BASKET_POS[0];
+    const bz = BASKET_POS[2];
+    const cx = bx + clamp(shooter.x * 0.45, -2.6, 2.6);
+    const cy = 5.2;
+    const cz = bz + RIM_Z + 5.2;
+    const lx = bx + shooter.x * 0.22;
+    const ly = RIM_H - 0.3;
+    const lz = bz + (RIM_Z + shooter.z) * 0.6;
     if (snap) {
       camera.position.set(cx, cy, cz);
       camLook.current.set(lx, ly, lz);

@@ -176,6 +176,24 @@ export function nearestSpot(pos: THREE.Vector3): number {
   return best;
 }
 
+/**
+ * Where the ball rests while the current shooter holds it — just in FRONT
+ * of the chest at hand height. Placing it at the character's exact centre
+ * used to bury the ball inside the torso model.
+ */
+export function heldBallPos(t: BState, out?: THREE.Vector3): THREE.Vector3 {
+  const isPlayer = t.turn === 0;
+  const p = isPlayer ? t.playerPos : t.opPos;
+  const y = (isPlayer ? t.playerY : t.opY) + 1.15;
+  const f = isPlayer ? t.playerFacing : t.opFacing;
+  const v = out ?? new THREE.Vector3();
+  return v.set(
+    p.x + Math.sin(f) * 0.42,
+    y,
+    p.z + Math.cos(f) * 0.42,
+  );
+}
+
 /** Whose shot is in the air (for banners). */
 export const turnName = (t: 0 | 1) => (t === 0 ? "YOU" : "SLAM");
 
@@ -223,9 +241,7 @@ export function releaseShot(t: BState, meter: number): boolean {
   t.rimPassed = false;
   t.landed = false;
 
-  const shooter = t.turn === 0 ? t.playerPos : t.opPos;
-  const handY = (t.turn === 0 ? t.playerY : t.opY) + 1.35;
-  const from = new THREE.Vector3(shooter.x, handY, shooter.z);
+  const from = heldBallPos(t);
 
   // Aim target — decided here, physics just dramatises it.
   let target: THREE.Vector3;
@@ -263,6 +279,9 @@ export function stepB(t: BState, dt: number) {
   t.shake = Math.max(0, t.shake - dt * 2);
   t.playerSwing = Math.min(9, t.playerSwing + dt);
   t.opSwing = Math.min(9, t.opSwing + dt);
+  // A held ball rides in front of its shooter's chest every frame, so it
+  // never sits buried in the torso nor lags behind while walking.
+  if (t.ballState === "held") t.ballPos.copy(heldBallPos(t));
   if (t.playerY > 0 || t.playerVY !== 0) {
     t.playerY += t.playerVY * dt;
     t.playerVY -= GRAV * dt;
@@ -282,7 +301,8 @@ export function stepB(t: BState, dt: number) {
       t.meter += t.meterDir * dt * 1.25;
       if (t.meter >= 1) { t.meter = 1; t.meterDir = -1; }
       else if (t.meter <= 0) { t.meter = 0; t.meterDir = 1; }
-      // Bot releases on its own clock.
+      // Bot releases on its own clock (opAimAt is set fresh when it
+      // enters this phase, so it actually winds up before firing).
       if (t.turn === 1 && t.time >= t.opAimAt) {
         const skill = clamp(0.5 * skillFactor() + gauss(0.09), 0.04, 0.97);
         releaseShot(t, 0.2 + skill * 0.78);
@@ -331,6 +351,10 @@ function stepPick(t: BState, dt: number) {
         t.phase = "aim";
         t.meter = 0;
         t.meterDir = 1;
+        // Wind up for a beat before the release — the old code reused the
+        // walk-to-spot timer here, so the bot fired the instant it entered
+        // "aim" with zero windup.
+        t.opAimAt = t.time + 0.6 + Math.random() * 0.5;
       }
     }
   }
@@ -361,6 +385,11 @@ function stepBall(t: BState, dt: number) {
   if (!t.rimPassed && b.z >= RIM_Z && b.z <= RIM_Z + 0.6 && b.y <= RIM_H + 0.1 && v.y < 0) {
     t.rimPassed = true;
     if (t.made) {
+      // The net catches the ball — kill most of its forward momentum so a
+      // made shot drops straight through instead of rocketing off the back
+      // of the court (which used to freeze the ball mid-air at the edge).
+      v.x *= 0.12;
+      v.z *= 0.12;
       if (t.quality >= SWISH_QUALITY) {
         swishSfx();
         useGame_popup("SWISH!", "gold", true);
@@ -406,7 +435,12 @@ function stepBall(t: BState, dt: number) {
 function endFlight(t: BState) {
   t.phase = "resolve";
   t.pointTimer = 2.1;
-  t.ballState = "held";
+  // Leave the ball where it landed while the banner plays — jumping it back
+  // into the shooter's hands here read as a teleport glitch. Snap it to the
+  // floor in case it settled while still airborne on an out-of-bounds escape.
+  t.ballState = "ground";
+  t.ballVel.set(0, 0, 0);
+  t.ballPos.y = BALL_R;
 
   const wasForced = t.forcedSpot >= 0;
   const shooterName = turnName(t.turn);
@@ -472,6 +506,8 @@ function beginNextTurn(t: BState) {
   t.opAimAt = 0;
   t.made = false;
   t.phase = "pick";
+  t.ballState = "held";
+  t.ballVel.set(0, 0, 0);
 
   // Park each shooter near the free-throw line for the next pick.
   const p = t.turn === 0 ? t.playerPos : t.opPos;
