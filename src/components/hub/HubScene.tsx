@@ -22,6 +22,12 @@ import { Treeline } from "./Treeline";
 import { BuildingDress } from "./BuildingDress";
 import { PlaygroundBits } from "./PlaygroundBits";
 import { FenceUpgrade } from "./FenceUpgrade";
+import { LightingRig } from "./LightingRig";
+import { Birds } from "./Birds";
+import { Fireflies } from "./Fireflies";
+import { Pathways } from "./Pathways";
+import { PlaygroundUpgrade } from "./PlaygroundUpgrade";
+import { BannerFlags } from "./BannerFlags";
 import { PIT_R, OCTA, WALL_H as GAGA_WALL_H } from "../../game/gaga";
 
 /** A slim post-mounted sign that stands at the edge of each court. */
@@ -266,7 +272,8 @@ function RedLightLaneStatic() {
 export function HubScene() {
   return (
     <>
-      <ambientLight intensity={0.34} />
+      {/* ── Season 5 — the static rig below is retired; <LightingRig/> (mounted below) drives the school-day light ── */}
+      {/*
       <hemisphereLight args={["#dceeff", "#7d8c68", 0.72]} />
       <directionalLight
         position={[16, 26, -10]}
@@ -283,7 +290,7 @@ export function HubScene() {
         shadow-bias={-0.0004}
       />
       <directionalLight position={[-14, 12, 16]} intensity={0.32} color="#bcd6ff" />
-
+      */}
       <World />
 
       {/* ── FOUR SQUARE — west side ── */}
@@ -406,7 +413,14 @@ export function HubScene() {
       <BuildingDress />
       <PlaygroundBits />
       <FenceUpgrade />
-      {/* Tag: open blacktop zone in the south corridor — sign on a post */}
+      {/* ── Season 5 — sky, light & yard upgrades (visual only) ── */}
+      <LightingRig />
+      <Birds />
+      <Fireflies />
+      <Pathways />
+      <PlaygroundUpgrade />
+      <BannerFlags />
+
       <group position={TAG_POS}>
         {/* post */}
         <mesh castShadow position={[0, 1.0, 0]}>

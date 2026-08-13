@@ -578,3 +578,51 @@ export function makeBurstTexture(): THREE.CanvasTexture {
   g.fillRect(0, 0, S, S);
   return tex(c);
 }
+// ── Season 5 — dirt paths & sky dome ──────────────────────────
+export function makeDirtTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const c = canvas(S, S);
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#a5845c";
+  g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 1500; i++) {
+    const v = 125 + Math.random() * 75;
+    g.fillStyle = `rgba(${v},${Math.round(v * 0.85)},${Math.round(v * 0.6)},${0.22 + Math.random() * 0.26})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 1.5 + Math.random() * 2.5, 1.5 + Math.random() * 2.5);
+  }
+  // shoe scuffs
+  g.strokeStyle = "rgba(96,72,44,0.22)";
+  for (let i = 0; i < 7; i++) {
+    g.lineWidth = 2 + Math.random() * 3;
+    g.beginPath();
+    g.arc(S * (0.2 + Math.random() * 0.6), S * (0.2 + Math.random() * 0.6), 25 + Math.random() * 55, Math.random() * 3, Math.random() * 3 + 2);
+    g.stroke();
+  }
+  // packed-down edge shading
+  const gr = g.createRadialGradient(S / 2, S / 2, S * 0.1, S / 2, S / 2, S * 0.72);
+  gr.addColorStop(0, "rgba(0,0,0,0)");
+  gr.addColorStop(1, "rgba(58,42,24,0.3)");
+  g.fillStyle = gr;
+  g.fillRect(0, 0, S, S);
+  return tex(c, [3, 3]);
+}
+
+/**
+ * Vertical sky gradient for the hub's sky dome. The top of the dome is the
+ * palette's clear-sky colour; the bottom melts into the horizon haze, so
+ * the dome always agrees with the fog the rest of the yard is painted in.
+ */
+export function makeSkyGradientTexture(top: string, bottom: string): THREE.CanvasTexture {
+  const W = 32, H = 512;
+  const c = canvas(W, H);
+  const g = c.getContext("2d")!;
+  const gr = g.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, top);
+  gr.addColorStop(0.55, top);
+  gr.addColorStop(0.82, bottom);
+  gr.addColorStop(1, bottom);
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+  return tex(c);
+}
+
