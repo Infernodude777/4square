@@ -14,6 +14,14 @@ import {
   MonkeyBars, PicnicTable, Bushes, FlowerBed, LampPosts,
 } from "./Props";
 import { BASE_POS } from "../../game/kickball";
+import { SunRig } from "./SunRig";
+import { Clouds } from "./Clouds";
+import { AmbientDust } from "./AmbientDust";
+import { Garden } from "./Garden";
+import { Treeline } from "./Treeline";
+import { BuildingDress } from "./BuildingDress";
+import { PlaygroundBits } from "./PlaygroundBits";
+import { FenceUpgrade } from "./FenceUpgrade";
 import { PIT_R, OCTA, WALL_H as GAGA_WALL_H } from "../../game/gaga";
 
 /** A slim post-mounted sign that stands at the edge of each court. */
@@ -389,7 +397,15 @@ export function HubScene() {
       <Bushes positions={[[-12.2, 0, -2.0], [12.2, 0, -2.0]]} />
       <FlowerBed pos={[-8.0, 0, -13.9]} />
       <LampPosts positions={[[15.3, 0, -9.0], [15.3, 0, 0], [15.3, 0, 9.0], [-12.3, 0, -9.0], [-12.3, 0, 9.0]]} />
-
+      {/* ── Season 4 — yard dressing (visual only) ── */}
+      <SunRig />
+      <Clouds />
+      <AmbientDust />
+      <Garden />
+      <Treeline />
+      <BuildingDress />
+      <PlaygroundBits />
+      <FenceUpgrade />
       {/* Tag: open blacktop zone in the south corridor — sign on a post */}
       <group position={TAG_POS}>
         {/* post */}
