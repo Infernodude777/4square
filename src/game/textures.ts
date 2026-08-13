@@ -626,3 +626,151 @@ export function makeSkyGradientTexture(top: string, bottom: string): THREE.Canva
   return tex(c);
 }
 
+
+// ── Season 6 — mural & chalk ───────────────────────────────────
+/** Painted mural for the school wall: sun, hills and a big star. */
+export function makeMuralTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 512;
+  const c = canvas(W, H);
+  const g = c.getContext("2d")!;
+  // sky wash
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, "#7ec4ee");
+  sky.addColorStop(0.62, "#a8dcf4");
+  sky.addColorStop(1, "#cdeee0");
+  g.fillStyle = sky;
+  g.fillRect(0, 0, W, H);
+  // sun with rays
+  g.fillStyle = "#ffd23e";
+  g.beginPath();
+  g.arc(W * 0.82, H * 0.3, 66, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = "rgba(255,210,62,0.65)";
+  g.lineWidth = 12;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    g.beginPath();
+    g.moveTo(W * 0.82 + Math.cos(a) * 84, H * 0.3 + Math.sin(a) * 84);
+    g.lineTo(W * 0.82 + Math.cos(a) * 112, H * 0.3 + Math.sin(a) * 112);
+    g.stroke();
+  }
+  // rolling hills
+  g.fillStyle = "#5fa04b";
+  g.beginPath();
+  g.moveTo(0, H);
+  g.quadraticCurveTo(W * 0.2, H * 0.52, W * 0.42, H * 0.78);
+  g.quadraticCurveTo(W * 0.6, H * 0.46, W, H * 0.74);
+  g.lineTo(W, H);
+  g.closePath();
+  g.fill();
+  g.fillStyle = "#3f7a33";
+  g.beginPath();
+  g.moveTo(0, H);
+  g.quadraticCurveTo(W * 0.28, H * 0.68, W * 0.52, H * 0.86);
+  g.quadraticCurveTo(W * 0.72, H * 0.64, W, H * 0.84);
+  g.lineTo(W, H);
+  g.closePath();
+  g.fill();
+  // big falcon star
+  g.save();
+  g.translate(W * 0.2, H * 0.42);
+  g.fillStyle = "#f4f1e8";
+  g.beginPath();
+  for (let i = 0; i <= 10; i++) {
+    const r = i % 2 === 0 ? 90 : 40;
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    g[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  g.closePath();
+  g.fill();
+  g.restore();
+  // chalk clouds
+  g.fillStyle = "rgba(255,255,255,0.75)";
+  [[W * 0.14, H * 0.18], [W * 0.5, H * 0.14], [W * 0.66, H * 0.24]].forEach(([x, y]) => {
+    g.beginPath();
+    g.arc(x, y, 30, 0, Math.PI * 2);
+    g.arc(x + 26, y - 12, 24, 0, Math.PI * 2);
+    g.arc(x + 54, y, 28, 0, Math.PI * 2);
+    g.fill();
+  });
+  // lettering
+  g.fillStyle = "#ffffff";
+  g.font = '900 92px "Arial Black", system-ui, sans-serif';
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText("GO FALCONS", W * 0.5, H * 0.9);
+  g.strokeStyle = "rgba(28,47,82,0.55)";
+  g.lineWidth = 6;
+  g.strokeText("GO FALCONS", W * 0.5, H * 0.9);
+  return tex(c);
+}
+
+/** Chalk doodles kids leave on the blacktop: sun, heart, hopscotch. */
+export function makeChalkTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const c = canvas(S, S);
+  const g = c.getContext("2d")!;
+  g.clearRect(0, 0, S, S);
+  g.lineWidth = 6;
+  g.lineCap = "round";
+  // happy sun, top-left
+  g.strokeStyle = "rgba(255,220,90,0.85)";
+  g.beginPath();
+  g.arc(110, 110, 48, 0, Math.PI * 2);
+  g.stroke();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    g.beginPath();
+    g.moveTo(110 + Math.cos(a) * 58, 110 + Math.sin(a) * 58);
+    g.lineTo(110 + Math.cos(a) * 74, 110 + Math.sin(a) * 74);
+    g.stroke();
+  }
+  g.fillStyle = "rgba(255,220,90,0.85)";
+  g.beginPath();
+  g.arc(98, 98, 8, 0, Math.PI * 2);
+  g.arc(122, 98, 8, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = "rgba(255,220,90,0.85)";
+  g.beginPath();
+  g.arc(110, 122, 20, 0.15 * Math.PI, 0.85 * Math.PI);
+  g.stroke();
+  // heart, right side
+  g.strokeStyle = "rgba(255,120,160,0.8)";
+  g.beginPath();
+  g.moveTo(400, 130);
+  g.bezierCurveTo(340, 80, 320, 170, 400, 220);
+  g.bezierCurveTo(480, 170, 460, 80, 400, 130);
+  g.stroke();
+  // hopscotch, bottom-left
+  g.strokeStyle = "rgba(240,240,245,0.7)";
+  g.strokeRect(70, 300, 90, 90);
+  g.strokeRect(70, 390, 90, 90);
+  g.beginPath();
+  g.moveTo(75, 480);
+  g.lineTo(75, 530);
+  g.lineTo(95, 520);
+  g.lineTo(95, 560);
+  g.stroke();
+  // stars + squiggle
+  g.strokeStyle = "rgba(255,255,255,0.6)";
+  g.save();
+  g.translate(300, 330);
+  for (let i = 0; i <= 10; i++) {
+    const r = i % 2 === 0 ? 34 : 14;
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    g[i === 0 ? "moveTo" : "lineTo"](Math.cos(a) * r, Math.sin(a) * r);
+  }
+  g.closePath();
+  g.stroke();
+  g.restore();
+  g.beginPath();
+  g.moveTo(240, 430);
+  for (let i = 1; i <= 9; i++) g.lineTo(240 + i * 24, 430 + (i % 2 ? -16 : 16));
+  g.stroke();
+  // chalk words
+  g.fillStyle = "rgba(255,255,255,0.55)";
+  g.font = '700 44px "Comic Sans MS", cursive';
+  g.textAlign = "center";
+  g.fillText("best day ever!", 300, 250);
+  return tex(c);
+}

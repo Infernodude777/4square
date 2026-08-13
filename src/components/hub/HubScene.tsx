@@ -28,6 +28,30 @@ import { Fireflies } from "./Fireflies";
 import { Pathways } from "./Pathways";
 import { PlaygroundUpgrade } from "./PlaygroundUpgrade";
 import { BannerFlags } from "./BannerFlags";
+import { WaterTower } from "./WaterTower";
+import { Bleachers } from "./Bleachers";
+import { Scoreboard } from "./Scoreboard";
+import { MuralWall } from "./MuralWall";
+import { PicnicUpgrade } from "./PicnicUpgrade";
+import { BusStop } from "./BusStop";
+import { Sprinkler } from "./Sprinkler";
+import { RecycleBins } from "./RecycleBins";
+import { UtilityPoles } from "./UtilityPoles";
+import { Flagpole } from "./Flagpole";
+import { Kites } from "./Kites";
+import { ChalkDrawings } from "./ChalkDrawings";
+import { GardenShed } from "./GardenShed";
+import { BikeRack } from "./BikeRack";
+import { Treehouse } from "./Treehouse";
+import { SchoolBus } from "./SchoolBus";
+import { Windmill } from "./Windmill";
+import { WeatherVane } from "./WeatherVane";
+import { SoccerGoal } from "./SoccerGoal";
+import { GardenBench } from "./GardenBench";
+import { Birdhouses } from "./Birdhouses";
+import { HotDogCart } from "./HotDogCart";
+import { Sundial } from "./Sundial";
+import { Trellis } from "./Trellis";
 import { PIT_R, OCTA, WALL_H as GAGA_WALL_H } from "../../game/gaga";
 
 /** A slim post-mounted sign that stands at the edge of each court. */
@@ -420,6 +444,31 @@ export function HubScene() {
       <Pathways />
       <PlaygroundUpgrade />
       <BannerFlags />
+      {/* ── Season 6 — neighbourhood dressing (visual only) ── */}
+      <WaterTower />
+      <Bleachers />
+      <Scoreboard />
+      <MuralWall />
+      <PicnicUpgrade />
+      <BusStop />
+      <Sprinkler />
+      <RecycleBins />
+      <UtilityPoles />
+      <Flagpole />
+      <Kites />
+      <ChalkDrawings />
+      <GardenShed />
+      <BikeRack />
+      <Treehouse />
+      <SchoolBus />
+      <Windmill />
+      <WeatherVane />
+      <SoccerGoal />
+      <GardenBench />
+      <Birdhouses />
+      <HotDogCart />
+      <Sundial />
+      <Trellis />
 
       <group position={TAG_POS}>
         {/* post */}
